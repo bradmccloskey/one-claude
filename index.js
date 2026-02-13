@@ -85,7 +85,7 @@ function proactiveScan() {
 
       const processStatus = processMonitor.checkProjects([project.name]);
       const detail = digest.formatProjectDetail(project, processStatus[project.name]);
-      messenger.send(`ALERT: ${project.name} needs attention\n\n${detail}`);
+      messenger.send(`${project.name} needs attention:\n\n${detail}`);
       state.recordAlert(s, project.name, project.attentionReason);
       log("ALERT", `Sent alert for ${project.name}: ${project.attentionReason}`);
     }
@@ -124,7 +124,7 @@ function proactiveScan() {
       if (session.ended && !lastSignalState[`${session.projectName}:ended`]) {
         const lastOutput = session.lastOutput || "No output captured";
         messenger.send(
-          `/orchestrator\nSESSION ENDED: ${session.projectName}\n\nLast output:\n${lastOutput}`
+          `${session.projectName} session ended.\n\nLast output:\n${lastOutput}`
         );
         lastSignalState[`${session.projectName}:ended`] = true;
         log("SESSION", `Session ended for ${session.projectName}`);
