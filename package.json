@@ -1,0 +1,14 @@
+{
+  "name": "project-orchestrator",
+  "version": "1.0.0",
+  "description": "Daemon that monitors Claude Code project sessions, detects blockers, and manages via iMessage",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "node-cron": "^3.0.3"
+  }
+}

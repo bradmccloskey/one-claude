@@ -1,0 +1,35 @@
+{
+  "myNumber": "+19197498832",
+  "claudeNumber": "miniclaude_mccloskey@icloud.com",
+  "projectsDir": "/Users/claude/projects",
+  "pollIntervalMs": 10000,
+  "maxResponseLength": 1500,
+  "quietHours": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "07:00",
+    "timezone": "America/New_York"
+  },
+  "morningDigest": {
+    "enabled": true,
+    "cron": "0 7 * * *",
+    "timezone": "America/New_York"
+  },
+  "scanIntervalMs": 60000,
+  "idleThresholdMinutes": 15,
+  "maxConcurrentSessions": 5,
+  "projects": [
+    "claude-sms",
+    "land-speculation",
+    "network-diagram-generator",
+    "streamfinder",
+    "sports-arbitrage",
+    "FootballSquares",
+    "crypto-trader",
+    "dealhunter",
+    "cisco-network-test",
+    "nc-keno-analyzer",
+    "democrat-dollar",
+    "NetworkProbe"
+  ]
+}
