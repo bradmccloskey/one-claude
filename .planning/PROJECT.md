@@ -30,7 +30,7 @@ The orchestrator is a **process manager** — it can start/stop/restart Claude C
 **Goal:** Transform the process manager into an intelligent orchestrator with Claude as the central brain, capable of autonomous decision-making about what to work on, evaluating session progress, and only involving the human for real decisions.
 
 **Target features:**
-- Anthropic API integration (Claude as the decision engine)
+- Claude CLI integration via `claude -p` (zero cost with Max plan, zero dependencies)
 - Autonomous work prioritization based on project state, revenue impact, deadlines
 - Session output evaluation and progress judgment
 - Proactive session launching (doesn't wait for user command)
@@ -41,7 +41,7 @@ The orchestrator is a **process manager** — it can start/stop/restart Claude C
 ## Tech Stack
 
 - **Runtime:** Node.js (existing)
-- **LLM:** Anthropic Claude API (new)
+- **LLM:** `claude -p` via child_process (new — zero dependencies, covered by Max plan)
 - **Messaging:** macOS iMessage via AppleScript JXA (existing)
 - **Sessions:** tmux + Claude Code CLI (existing)
 - **State:** File-based JSON + .planning/ STATE.md (existing)
@@ -60,4 +60,4 @@ The orchestrator is a **process manager** — it can start/stop/restart Claude C
 
 ---
 
-*Last updated: 2026-02-15*
+*Last updated: 2026-02-16*

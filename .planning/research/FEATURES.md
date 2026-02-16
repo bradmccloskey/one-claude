@@ -2,6 +2,7 @@
 
 **Domain:** AI-powered multi-agent coding session orchestrator
 **Researched:** 2026-02-15
+**Updated:** 2026-02-16 — Revised for `claude -p` (Max plan) instead of Anthropic SDK
 **Mode:** Ecosystem (Features dimension)
 
 ## Context
@@ -18,22 +19,24 @@ Features users expect from an AI-powered orchestrator. Without these, the AI lay
 
 | # | Feature | Why Expected | Complexity | Depends On | Notes |
 |---|---------|--------------|------------|------------|-------|
-| T1 | **Anthropic API Integration** | Foundation -- without this, there is no AI layer | Low | None (new module) | Haiku 4.5 for routine decisions ($1/$5 MTok), Sonnet 4 for complex evaluation ($3/$15 MTok). Prompt caching critical for system prompts (90% savings on reads). |
+| T1 | **Claude CLI Integration** | Foundation -- without this, there is no AI layer | Low | None (new module) | Use `claude -p` via child_process. Zero dependencies, zero cost (Max plan). Default to Sonnet, escalate to Opus for complex decisions. |
 | T2 | **Project State Comprehension** | AI must understand what each project is doing to make any decision | Medium | T1, existing scanner | Feed STATE.md, recent git log, signal files to Claude. Structured extraction: phase, blockers, last activity, next steps. Already parsed partially by scanner.js -- AI adds semantic understanding. |
 | T3 | **Priority Scoring Engine** | Core value prop -- "what should I work on next?" | Medium | T1, T2 | Weighted scoring across 5-6 dimensions: revenue potential, deadline urgency, blocker freshness, momentum (recent activity), effort remaining, strategic alignment. Output: ranked list with rationale. |
 | T4 | **Autonomous Session Launch** | Transforms orchestrator from reactive to proactive | Medium | T3, existing session-manager | When idle slots available AND priority queue has work, launch sessions without asking. Existing startSession() handles tmux mechanics -- AI decides WHEN and WHAT. |
 | T5 | **Session Completion Evaluation** | Must judge "did this session accomplish something useful?" | Medium | T1, T2, existing signal-protocol | When completed.json fires: read summary, check git diff, compare against plan. Decide: advance to next phase, retry, or flag for human. LLM-as-judge pattern using structured rubric. |
 | T6 | **Intelligent SMS Summaries** | Raw data dumps are useless at scale -- AI must synthesize | Medium | T1, existing messenger | Replace current formatted status with AI-generated summaries. "3 projects progressed today. web-scraping-biz shipped Apify update. crypto-trader blocked on API keys. income-dashboard idle 3 days." Constraint: SMS has ~1600 char limit per message. |
-| T7 | **Cost Tracking and Budget Controls** | Autonomous API calls without limits = budget disaster | Low | T1 | Daily/weekly/monthly budget caps. Per-decision token logging. Alert when approaching limits. Hard stop at budget ceiling. Essential for autonomous operation -- 73% of teams lack this per AICosts.ai research. |
+| ~~T7~~ | ~~**Cost Tracking and Budget Controls**~~ | ~~Autonomous API calls without limits = budget disaster~~ | ~~Low~~ | ~~T1~~ | **REMOVED — Max plan provides unlimited `claude -p` usage at $0 incremental cost. No budget tracking needed.** |
 | T8 | **Decision Logging** | Must explain WHY it did what it did -- debugging and trust | Low | T1 | Every AI decision logged: input context, prompt, response, action taken. JSON append-only log. Essential for debugging bad decisions and building user trust. |
 
 ### Table Stakes Rationale
 
-These 8 features are non-negotiable because without them the orchestrator is either:
+These 7 features are non-negotiable because without them the orchestrator is either:
 - Not actually intelligent (T1, T2, T3)
 - Not actually autonomous (T4)
 - Not actually useful (T5, T6)
-- Not actually safe to run unattended (T7, T8)
+- Not actually trustworthy (T8)
+
+**Note:** T7 (Cost Tracking) was removed because the Max plan eliminates API billing concerns.
 
 ---
 
@@ -78,7 +81,7 @@ Things to deliberately NOT build. These are common over-engineering traps in AI 
 
 | # | Anti-Feature | Why Avoid | What to Do Instead |
 |---|--------------|-----------|-------------------|
-| A1 | **Multi-Model Routing / Model Selection** | Adds complexity for marginal gains. The orchestrator's decisions are not latency-sensitive enough to justify routing logic between Haiku/Sonnet/Opus per-request. | Pick two models: Haiku 4.5 for routine (priority scoring, status parsing) and Sonnet 4 for complex (evaluation, error analysis). Hardcode the selection per decision type. Revisit only if costs become a problem. |
+| A1 | **Multi-Model Routing / Model Selection** | Adds complexity for marginal gains. With Max plan, there's no cost incentive to optimize model choice. | Default to Sonnet via `claude -p --model sonnet`. Use Opus for genuinely complex situations. Simple if-else, not a routing framework. |
 | A2 | **Agent-to-Agent Communication** | The Claude Code sessions don't need to talk to each other. Cross-project coordination belongs in the orchestrator, not in a mesh between sessions. | Keep hub-and-spoke. Orchestrator is the only brain. Sessions communicate only via signal files (.orchestrator/). No A2A protocol, no shared memory between sessions. |
 | A3 | **Fine-Grained Permission System** | Over-engineering for a single-user system. RBAC, approval workflows, and permission matrices add complexity for no audience. | The user is the only human. The orchestrator either acts autonomously or asks the user. Binary: act or ask. No roles, no approval chains. |
 | A4 | **Persistent Vector Store / RAG** | Tempting but unnecessary at 18 projects. Full project context fits in a single Haiku prompt window. Embeddings add infra, latency, and failure modes. | Use direct file reads: STATE.md + last 10 git log entries + signal files. Total context per project is ~500-1000 tokens. All 18 projects summarized is ~10K tokens. Well within Haiku's 200K window. |
@@ -98,7 +101,7 @@ The common thread: this orchestrator manages a single person's portfolio of side
 ## Feature Dependencies
 
 ```
-T1 (API Integration)
+T1 (Claude CLI Integration)
   |
   +-- T2 (State Comprehension)
   |     |
@@ -121,7 +124,6 @@ T1 (API Integration)
   |           |
   |           +-- D9 (Morning Digest)
   |
-  +-- T7 (Cost Tracking)
   +-- T8 (Decision Logging)
         |
         +-- D2 (Adaptive Learning)
@@ -242,11 +244,10 @@ Set initial daily budget at $3.00 (3x estimated daily to allow burst). Monthly h
 For MVP (first usable version of AI-powered orchestration), prioritize:
 
 ### Must Ship (Phase 1)
-1. **T1** - Anthropic API integration with Haiku 4.5
-2. **T7** - Cost tracking and budget controls (BEFORE autonomous operation)
-3. **T8** - Decision logging (BEFORE autonomous operation)
-4. **T2** - Project state comprehension (feed scanner output to AI)
-5. **T3** - Priority scoring engine
+1. **T1** - Claude CLI integration (`claude -p` via child_process)
+2. **T8** - Decision logging (BEFORE autonomous operation)
+3. **T2** - Project state comprehension (feed scanner output to AI)
+4. **T3** - Priority scoring engine
 
 ### Ship Next (Phase 2)
 6. **T4** - Autonomous session launch
@@ -266,7 +267,7 @@ For MVP (first usable version of AI-powered orchestration), prioritize:
 16. **D4** - Revenue-aware scheduling
 17. **D2** - Adaptive learning (needs data accumulation)
 
-**Phase ordering rationale:** Safety mechanisms (T7, T8) must exist before autonomous operation (T4). The AI must understand state (T2) before it can score priorities (T3). Evaluation (T5) should exist before the AI is launching sessions unsupervised. Differentiators layer on top once the core loop works.
+**Phase ordering rationale:** Decision logging (T8) must exist before autonomous operation (T4) for trust and debugging. The AI must understand state (T2) before it can score priorities (T3). Evaluation (T5) should exist before the AI is launching sessions unsupervised. Differentiators layer on top once the core loop works. Cost tracking (T7) removed — Max plan eliminates API billing concerns.
 
 ---
 

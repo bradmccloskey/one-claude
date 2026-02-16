@@ -3,6 +3,7 @@
 **Domain:** LLM-powered orchestrator for autonomous Claude Code session management
 **System:** Node.js daemon managing ~18 projects via tmux on Mac Mini
 **Researched:** 2026-02-15
+**Updated:** 2026-02-16 — Revised for `claude -p` (Max plan). Cost-related pitfalls eliminated.
 **Overall confidence:** HIGH (verified against Anthropic official docs, real-world incident reports, and existing codebase analysis)
 
 ---
@@ -13,35 +14,13 @@ Mistakes that cause financial loss, system instability, or total loss of user tr
 
 ---
 
-### Pitfall 1: API Cost Explosion from Unthrottled Decision Cycles
+### ~~Pitfall 1: API Cost Explosion~~ — ELIMINATED
 
-**What goes wrong:** The orchestrator calls the Claude API every scan cycle (currently 60 seconds) to make decisions about 18 projects. Each call includes project state, git logs, and context. At Haiku 4.5 rates ($1/$5 per MTok), a modest 5K-token decision call every 60 seconds costs ~$7/day. But if the system uses Sonnet ($3/$15) or Opus ($5/$25) for better reasoning, and context grows to 20K+ tokens per call, costs hit $30-90/day -- $900-2,700/month. A single "let me think harder about this" loop where the model requests more context can burn $50+ in an afternoon.
+**Status:** This pitfall is **eliminated** by using `claude -p` with a Max plan ($200/mo flat, unlimited usage). There are no per-token API charges, no daily/monthly billing to track, and no budget caps needed.
 
-**Real-world precedent:** A developer using Claude Code subagents consumed 887K tokens/minute during a 2.5-hour session, estimated at $8,000-$15,000 for a single sitting. Another user woke up to a $200 charge from overnight when an agent got stuck in a retry loop. [Source: AICosts.ai, Claude Code docs]
+The original concern was valid for direct API usage ($6-1,600+/month depending on optimization). With Max plan, incremental cost is $0.
 
-**Why it happens in THIS system:** The scan loop runs 24/7. Every 60 seconds, it could fire an API call. That is 1,440 calls/day. The system has no concept of "nothing changed, skip the AI call" -- right now the scanner runs every cycle regardless. Add an AI brain that reasons about 18 projects with state files, git logs, and session status, and token counts balloon fast.
-
-**Consequences:**
-- Monthly API bills of $500-3,000 on a system meant to generate passive income
-- User discovers the bill after the month ends (Anthropic bills monthly)
-- Loses all trust in the system and shuts it down permanently
-
-**Warning signs:**
-- No per-day cost tracking in the system
-- API calls happening every scan cycle even when nothing changed
-- Context size growing as more project state is included
-- No cost ceiling or circuit breaker
-
-**Prevention:**
-1. **Change detection gate:** Only call the API when something actually changed (new signal file, STATE.md modified, session ended, user message). The existing `proactiveScan()` already tracks `lastScanResults` -- extend this to gate AI calls.
-2. **Hard daily budget:** Track cumulative token usage in `.state.json`. Stop all AI calls when daily budget is hit (e.g., $2/day = $60/month). Send an SMS: "AI budget hit for today, running in manual mode."
-3. **Tiered model selection:** Use Haiku 4.5 ($1/$5 per MTok) for routine "has anything changed?" triage. Only escalate to Sonnet/Opus for complex decisions (prioritization, session evaluation). This alone cuts costs 3-5x.
-4. **Context budget per call:** Cap input tokens at a fixed limit (e.g., 4,000 tokens). Summarize project state into compact representations rather than sending raw STATE.md + git log.
-5. **Batch non-urgent decisions:** Don't decide per-project per-cycle. Accumulate changes over 5-10 minutes, then make one batch decision call.
-
-**Which phase should address this:** Phase 1 (API integration). The budget/throttle system MUST ship before any AI calls go live. Not Phase 2. Phase 1.
-
-**Severity:** CATASTROPHIC. This is the #1 risk. A $500 surprise bill on a passive income Mac Mini kills the entire project.
+**Remaining consideration:** While cost is eliminated, excessive `claude -p` calls could still waste compute resources on the Mac Mini (each call spawns a process). The 5-minute think interval and change-detection gating are still good practices for efficiency, just not for cost control.
 
 ---
 
@@ -259,21 +238,11 @@ Mistakes that cause annoyance or minor inefficiency. Fixable but worth knowing a
 
 ---
 
-### Pitfall 10: Anthropic API Rate Limits and 429 Errors
+### ~~Pitfall 10: Anthropic API Rate Limits and 429 Errors~~ — ELIMINATED
 
-**What goes wrong:** The orchestrator hits Anthropic's rate limits and gets 429 errors. At Tier 1, the limit is 50 RPM and 50,000 ITPM for Haiku. If the orchestrator is making decisions AND the user is running Claude Code sessions that also use the same API key, the combined usage exceeds limits.
+**Status:** This pitfall is **eliminated** by using `claude -p` with a Max plan. Claude Code CLI handles its own rate limiting and queuing internally. No API keys, no 429 errors, no rate limit headers to check.
 
-**Why it happens in THIS system:** The orchestrator and the Claude Code sessions might share the same Anthropic API key. Claude Code sessions are heavy API consumers. If 5 sessions are running while the orchestrator is also making API calls, rate limits are shared.
-
-**Prevention:**
-1. **Separate API key:** Use a dedicated API key (separate workspace) for the orchestrator, distinct from Claude Code sessions. This isolates rate limits.
-2. **Retry with exponential backoff:** On 429, wait `retry-after` seconds (from response header), then retry. Do not retry immediately in a tight loop.
-3. **Rate limit awareness:** Read `anthropic-ratelimit-requests-remaining` from response headers. If remaining is low, defer non-urgent AI calls.
-4. **Tier-appropriate usage:** At Tier 1 (50 RPM), the orchestrator should make no more than 1-2 calls per minute, leaving headroom. Upgrade to Tier 2+ ($40 deposit) for 1,000 RPM if needed.
-
-**Which phase should address this:** Phase 1 (API integration). Implement backoff and separate key from the start.
-
-**Severity:** LOW. Causes temporary inability to make decisions, not system damage. The orchestrator falls back to manual mode.
+**Remaining consideration:** If too many `claude -p` processes run simultaneously (e.g., 5 active sessions + orchestrator think cycle), there may be resource contention. Mitigation: run only one `claude -p` at a time from the orchestrator, and let the existing session manager handle session concurrency.
 
 ---
 
@@ -299,16 +268,16 @@ Summary of which pitfalls each phase must address, ordered by the likely phase s
 
 | Phase Topic | Likely Pitfall | Mitigation | Priority |
 |---|---|---|---|
-| API Integration (Phase 1) | Cost explosion (#1) | Daily budget, change-detection gate, Haiku-first | MUST HAVE |
-| API Integration (Phase 1) | Structured output parsing (#6) | Use tool use / function calling, not raw JSON | MUST HAVE |
-| API Integration (Phase 1) | Main loop blocking (#9) | Async AI calls, separate from message polling | MUST HAVE |
-| API Integration (Phase 1) | Rate limits (#10) | Separate API key, backoff, tier awareness | SHOULD HAVE |
-| Guardrails Framework (Phase 1-2) | Runaway automation (#2) | Action allowlist, cooldowns, resource checks | MUST HAVE |
+| ~~API Integration (Phase 1)~~ | ~~Cost explosion (#1)~~ | ~~Daily budget, Haiku-first~~ | ~~ELIMINATED (Max plan)~~ |
+| CLI Integration (Phase 1) | Structured output parsing (#6) | JSON-in-prompt with robust parser, validation | MUST HAVE |
+| CLI Integration (Phase 1) | Main loop blocking (#9) | Async child_process, 30s timeout | MUST HAVE |
+| ~~API Integration (Phase 1)~~ | ~~Rate limits (#10)~~ | ~~Separate API key, backoff~~ | ~~ELIMINATED (Max plan)~~ |
+| Guardrails Framework (Phase 1) | Runaway automation (#2) | Action allowlist, cooldowns, resource checks | MUST HAVE |
 | Decision Engine (Phase 2) | Stale state (#3) | Atomic snapshots, optimistic locking, debounce | MUST HAVE |
 | Decision Engine (Phase 2) | Hallucinated understanding (#4) | Priority overrides, confidence scoring, outcome tracking | SHOULD HAVE |
-| Decision Engine (Phase 2) | Context bloat (#5) | Two-stage reasoning, delta-only, prompt caching | SHOULD HAVE |
-| Decision Engine (Phase 2) | Model regression (#8) | Pin versions, decision logging, eval suite | SHOULD HAVE |
-| Intelligent SMS (Phase 3) | Notification spam (#7) | Tier system, daily budget, aggregate messages | MUST HAVE |
+| Decision Engine (Phase 2) | Context bloat (#5) | Compact summaries, delta-only context | SHOULD HAVE |
+| Decision Engine (Phase 2) | Model regression (#8) | Pin model flags, decision logging | SHOULD HAVE |
+| Intelligent SMS (Phase 2) | Notification spam (#7) | Tier system, daily budget, aggregate messages | MUST HAVE |
 | Operations (Ongoing) | Log growth (#11) | Rotation, pruning, disk checks | NICE TO HAVE |
 
 ---
@@ -317,29 +286,15 @@ Summary of which pitfalls each phase must address, ordered by the likely phase s
 
 Concrete cost estimates for different architectures, based on verified Anthropic pricing.
 
-### Scenario A: Naive Implementation (No Optimization)
-- Model: Sonnet 4.5, every 60s, 18 projects at ~500 tokens each = ~10K tokens/call
-- Calls/day: 1,440
-- Input cost: 1,440 * 10,000 / 1,000,000 * $3 = **$43.20/day input**
-- Output (est. 500 tokens/call): 1,440 * 500 / 1,000,000 * $15 = **$10.80/day output**
-- **Total: ~$54/day = ~$1,620/month**
+### Cost Modeling — ELIMINATED
 
-### Scenario B: Optimized Implementation (Recommended)
-- Model: Haiku 4.5, only on change (est. 50 calls/day), compact state (~2K tokens)
-- Escalation to Sonnet: 5 calls/day for complex decisions (~5K tokens)
-- Haiku input: 50 * 2,000 / 1,000,000 * $1 = $0.10/day
-- Haiku output: 50 * 300 / 1,000,000 * $5 = $0.075/day
-- Sonnet input: 5 * 5,000 / 1,000,000 * $3 = $0.075/day
-- Sonnet output: 5 * 500 / 1,000,000 * $15 = $0.0375/day
-- **Total: ~$0.29/day = ~$8.70/month**
-- With prompt caching (90% cache hit on system prompt): **~$5-6/month**
+**With Max plan ($200/mo flat, unlimited `claude -p`):**
+- All scenarios cost $0 incremental
+- No budget caps needed
+- No cost tracking needed
+- Model selection is about quality, not cost
 
-### Scenario C: Budget Ceiling
-- Hard cap at $2/day = $60/month
-- Allows ~40 Sonnet calls or ~200 Haiku calls per day
-- Sufficient for change-detection + periodic comprehensive review
-
-**Recommendation:** Target Scenario B. Implement Scenario C as the safety net. Scenario A is the failure mode that Pitfall #1 prevents.
+The original cost modeling (Scenario A: $1,620/mo naive, Scenario B: $8.70/mo optimized) is retained for reference in case the user ever switches away from Max plan, but is not relevant to the current implementation.
 
 ---
 
