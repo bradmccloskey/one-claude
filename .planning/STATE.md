@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: 2 of 2 (Autonomous Execution and Intelligence)
-Plan: 1 of 4 in phase (02-01 complete)
+Plan: 2 of 4 in phase (02-01, 02-02 complete)
 Status: In progress
-Last activity: 2026-02-16 — Completed 02-01-PLAN.md (Foundation Layer)
+Last activity: 2026-02-16 — Completed 02-02-PLAN.md (Decision Executor Wiring)
 
-Progress: [======....] 4/7 plans (57%)
+Progress: [=======...] 5/7 plans (71%)
 
 ## Accumulated Context
 
@@ -34,12 +34,17 @@ Progress: [======....] 4/7 plans (57%)
 - Tier 1 (URGENT) always bypasses daily SMS budget and quiet hours
 - incrementVersion() is explicit, not auto-incremented in save()
 - Runtime autonomy level stored in .state.json, config.json holds the default
+- Autonomy gating matrix as static class property on DecisionExecutor
+- execute() is async for forward-compatible precondition checks
+- NotificationManager optional in DecisionExecutor constructor (falls back to messenger)
+- NotificationManager wired in index.js with batch timer lifecycle
+- Blocked actions still notify (tier 3) so user sees what AI would have done
 
 ### Blockers
 - None
 
 ## Session Continuity
 
-Last session: 2026-02-16T14:45:41Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-02-16
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
