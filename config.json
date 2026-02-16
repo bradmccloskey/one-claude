@@ -37,5 +37,21 @@
     "bandwidth-sharing",
     "youtube-automation",
     "income-dashboard"
-  ]
+  ],
+  "ai": {
+    "enabled": false,
+    "model": "sonnet",
+    "thinkIntervalMs": 300000,
+    "maxPromptLength": 8000,
+    "autonomyLevel": "observe",
+    "protectedProjects": [],
+    "cooldowns": {
+      "sameProjectMs": 600000,
+      "sameActionMs": 300000
+    },
+    "resourceLimits": {
+      "minFreeMemoryMB": 2048,
+      "maxConcurrentThinks": 1
+    }
+  }
 }
