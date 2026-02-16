@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: 1 of 2 (AI Brain Foundation)
-Plan: 1 of 3 in phase
+Plan: 2 of 3 in phase
 Status: In progress
-Last activity: 2026-02-16 — Completed 01-01-PLAN.md (Context Assembly Foundation)
+Last activity: 2026-02-16 — Completed 01-02-PLAN.md (AI Brain + Decision Executor)
 
-Progress: [==........] 1/6 plans (17%)
+Progress: [====......] 2/6 plans (33%)
 
 ## Accumulated Context
 
@@ -24,12 +24,16 @@ Progress: [==........] 1/6 plans (17%)
 - AI disabled by default, observe-only autonomy, 5-minute think interval
 - Prompt uses natural language text with --- separators (not JSON context)
 - priorities.json is gitignored runtime user state
+- Pass prompt to claude -p via execSync stdin pipe (no temp files)
+- 30-second timeout on claude -p execution (sub-30s think cycle target)
+- Three-stage JSON parser: direct parse, markdown fences, outermost braces
+- DecisionExecutor.execute() is a no-op scaffold in Phase 1 (observe only)
 
 ### Blockers
 - None
 
 ## Session Continuity
 
-Last session: 2026-02-16T12:31Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-02-16T12:39Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
