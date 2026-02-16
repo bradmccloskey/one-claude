@@ -229,7 +229,7 @@ async function pollMessages() {
 
 // ── Startup ─────────────────────────────────────────────────────────────────
 console.log("╔═══════════════════════════════════════════════╗");
-console.log("║       Project Orchestrator v2.0               ║");
+console.log("║       Project Orchestrator v3.0               ║");
 console.log("╠═══════════════════════════════════════════════╣");
 console.log(`║  Your #:    ${CONFIG.myNumber.padEnd(33)}║`);
 console.log(`║  Bot:       ${CONFIG.claudeNumber.padEnd(33)}║`);
@@ -239,6 +239,7 @@ console.log(`║  Msg poll:  ${(CONFIG.pollIntervalMs + "ms").padEnd(33)}║`);
 console.log(`║  Scan:      ${(CONFIG.scanIntervalMs + "ms").padEnd(33)}║`);
 console.log(`║  Quiet:     ${(CONFIG.quietHours.start + "-" + CONFIG.quietHours.end).padEnd(33)}║`);
 console.log(`║  Digest:    ${CONFIG.morningDigest.cron.padEnd(33)}║`);
+console.log(`║  AI:        ${(CONFIG.ai?.enabled ? "enabled (" + CONFIG.ai.autonomyLevel + ")" : "disabled").padEnd(33)}║`);
 console.log("╚═══════════════════════════════════════════════╝");
 console.log("");
 
@@ -277,6 +278,36 @@ pollMessages();
 // Do an initial proactive scan after 5 seconds (let message polling init first)
 setTimeout(proactiveScan, 5000);
 
+// ── AI Think Cycle ────────────────────────────────────────────────────────
+let thinkInterval = null;
+
+function startThinkCycle() {
+  if (thinkInterval) return;
+  const intervalMs = CONFIG.ai?.thinkIntervalMs || 300000;
+  thinkInterval = setInterval(async () => {
+    if (!aiBrain.isEnabled()) return;
+    if (scheduler.isQuietTime()) return;
+
+    try {
+      log("AI", "Starting think cycle...");
+      const decision = await aiBrain.think();
+      if (decision && decision.recommendations?.length > 0) {
+        const evaluated = decision.evaluated || decisionExecutor.evaluate(decision.recommendations);
+        const sms = decisionExecutor.formatForSMS(evaluated, decision.summary);
+        messenger.send(sms);
+        log("AI", `Think cycle complete: ${decision.recommendations.length} recommendations`);
+      } else {
+        log("AI", "Think cycle complete: no recommendations");
+      }
+    } catch (e) {
+      log("AI", `Think cycle error: ${e.message}`);
+    }
+  }, intervalMs);
+  log("AI", `Think cycle scheduled every ${intervalMs / 1000}s`);
+}
+
+startThinkCycle();
+
 log("BOOT", "Orchestrator running. Text 'help' for commands.");
 
 // ── Graceful shutdown ───────────────────────────────────────────────────────
@@ -285,6 +316,7 @@ function shutdown(signal) {
   log("SHUTDOWN", "Note: Managed tmux sessions will continue running independently.");
   clearInterval(msgInterval);
   clearInterval(scanInterval);
+  if (thinkInterval) clearInterval(thinkInterval);
   scheduler.stop();
   process.exit(0);
 }
