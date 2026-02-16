@@ -182,6 +182,51 @@ function proactiveScan() {
   }
 }
 
+// ── Session timeout enforcement ──────────────────────────────────────────────
+function checkSessionTimeouts() {
+  const maxDurationMs = CONFIG.ai?.maxSessionDurationMs || 2700000; // 45 min default
+
+  try {
+    const sessions = sessionManager.getActiveSessions();
+
+    for (const session of sessions) {
+      const startTime = new Date(session.created).getTime();
+      const duration = Date.now() - startTime;
+
+      if (duration > maxDurationMs) {
+        const durationMin = Math.round(duration / 60000);
+        log("TIMEOUT", `Session ${session.projectName} exceeded ${Math.round(maxDurationMs / 60000)}min (running ${durationMin}min), stopping...`);
+
+        // Capture last output before stopping (best-effort)
+        let lastOutput = "";
+        try {
+          const rawOutput = require("child_process").execSync(
+            `tmux capture-pane -t "${session.name}" -p 2>/dev/null | tail -5`,
+            { encoding: "utf-8", timeout: 5000 }
+          );
+          lastOutput = rawOutput.trim().substring(0, 300);
+        } catch {}
+
+        // Stop the session
+        const result = sessionManager.stopSession(session.projectName);
+
+        // Notify via notificationManager (tier 2 = action needed)
+        const notification = `Session ${session.projectName} timed out after ${durationMin}min.${lastOutput ? "\n\nLast output:\n" + lastOutput : ""}`;
+
+        if (notificationManager) {
+          notificationManager.notify(notification, 2);
+        } else {
+          messenger.send(notification);
+        }
+
+        log("TIMEOUT", `Stopped ${session.projectName}: ${result.message}`);
+      }
+    }
+  } catch (e) {
+    log("TIMEOUT", `Error checking timeouts: ${e.message}`);
+  }
+}
+
 // ── Message polling ─────────────────────────────────────────────────────────
 let polling = false;
 
@@ -282,7 +327,10 @@ scheduler.startMorningDigest(sendDigest);
 
 // Start polling loops
 const msgInterval = setInterval(pollMessages, CONFIG.pollIntervalMs);
-const scanInterval = setInterval(proactiveScan, CONFIG.scanIntervalMs);
+const scanInterval = setInterval(() => {
+  proactiveScan();
+  checkSessionTimeouts();
+}, CONFIG.scanIntervalMs);
 
 // Initial poll
 pollMessages();
