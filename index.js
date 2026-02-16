@@ -86,6 +86,7 @@ function proactiveScan() {
       const processStatus = processMonitor.checkProjects([project.name]);
       const detail = digest.formatProjectDetail(project, processStatus[project.name]);
       messenger.send(`${project.name} needs attention:\n\n${detail}`);
+      commands.setContext(project.name, "needs-attention");
       state.recordAlert(s, project.name, project.attentionReason);
       log("ALERT", `Sent alert for ${project.name}: ${project.attentionReason}`);
     }
@@ -105,8 +106,9 @@ function proactiveScan() {
 
       const notification = signalProtocol.formatSignalNotification(signal);
       messenger.send(notification);
+      commands.setContext(signal.projectName, signal.type);
       lastSignalState[signalKey] = true;
-      log("SIGNAL", `${signal.type} from ${signal.projectName}`);
+      log("SIGNAL", `${signal.type} from ${signal.projectName} (set context)`);
 
       // Archive the signal after notifying
       signalProtocol.clearSignal(signal.projectName, signal.type);
@@ -126,6 +128,7 @@ function proactiveScan() {
         messenger.send(
           `${session.projectName} session ended.\n\nLast output:\n${lastOutput}`
         );
+        commands.setContext(session.projectName, "ended");
         lastSignalState[`${session.projectName}:ended`] = true;
         log("SESSION", `Session ended for ${session.projectName}`);
       }
@@ -259,3 +262,16 @@ function shutdown(signal) {
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+// ── Terminal input ──────────────────────────────────────────────────────────
+const readline = require("readline");
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: "orch> " });
+rl.prompt();
+rl.on("line", (line) => {
+  const input = line.trim();
+  if (!input) { rl.prompt(); return; }
+  const response = commands.route(input);
+  console.log("\n" + response + "\n");
+  rl.prompt();
+});
+rl.on("close", () => {});

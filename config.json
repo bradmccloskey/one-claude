@@ -19,7 +19,6 @@
   "idleThresholdMinutes": 15,
   "maxConcurrentSessions": 5,
   "projects": [
-    "claude-sms",
     "land-speculation",
     "network-diagram-generator",
     "streamfinder",
@@ -30,6 +29,13 @@
     "cisco-network-test",
     "nc-keno-analyzer",
     "democrat-dollar",
-    "NetworkProbe"
+    "NetworkProbe",
+    "roulette-strategy",
+    "mac-mini-passive-income",
+    "xmr-miner",
+    "web-scraping-biz",
+    "bandwidth-sharing",
+    "youtube-automation",
+    "income-dashboard"
   ]
 }
