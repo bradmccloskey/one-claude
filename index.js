@@ -88,8 +88,24 @@ function log(tag, msg) {
 }
 
 // ── Send morning digest ─────────────────────────────────────────────────────
-function sendDigest() {
+async function sendDigest() {
   try {
+    // Try AI-generated digest first
+    if (aiBrain.isEnabled()) {
+      log("DIGEST", "Generating AI digest...");
+      const aiDigest = await aiBrain.generateDigest();
+      if (aiDigest) {
+        messenger.send(aiDigest);
+        const s = state.load();
+        s.lastDigest = new Date().toISOString();
+        state.save(s);
+        log("DIGEST", "Sent AI-generated morning digest");
+        return;
+      }
+      log("DIGEST", "AI digest failed, falling back to template");
+    }
+
+    // Fallback to template digest
     const projects = scanner.scanAll();
     const processStatus = processMonitor.checkProjects(CONFIG.projects);
     const text = digest.formatMorningDigest(projects, processStatus);
@@ -97,7 +113,7 @@ function sendDigest() {
     const s = state.load();
     s.lastDigest = new Date().toISOString();
     state.save(s);
-    log("DIGEST", "Sent morning digest");
+    log("DIGEST", "Sent template morning digest");
   } catch (e) {
     log("DIGEST", `Error: ${e.message}`);
   }
@@ -340,30 +356,102 @@ setTimeout(proactiveScan, 5000);
 
 // ── AI Think Cycle ────────────────────────────────────────────────────────
 let thinkInterval = null;
+let nextThinkTimeoutMs = null;
 
 function startThinkCycle() {
   if (thinkInterval) return;
-  const intervalMs = CONFIG.ai?.thinkIntervalMs || 300000;
-  thinkInterval = setInterval(async () => {
-    if (!aiBrain.isEnabled()) return;
-    if (scheduler.isQuietTime()) return;
+  const defaultIntervalMs = CONFIG.ai?.thinkIntervalMs || 300000;
 
-    try {
-      log("AI", "Starting think cycle...");
-      const decision = await aiBrain.think();
-      if (decision && decision.recommendations?.length > 0) {
-        const evaluated = decision.evaluated || decisionExecutor.evaluate(decision.recommendations);
-        const sms = decisionExecutor.formatForSMS(evaluated, decision.summary);
-        messenger.send(sms);
-        log("AI", `Think cycle complete: ${decision.recommendations.length} recommendations`);
-      } else {
-        log("AI", "Think cycle complete: no recommendations");
+  function scheduleNextThink() {
+    const intervalMs = nextThinkTimeoutMs || defaultIntervalMs;
+    nextThinkTimeoutMs = null; // Reset override
+
+    thinkInterval = setTimeout(async () => {
+      if (!aiBrain.isEnabled()) {
+        scheduleNextThink();
+        return;
       }
-    } catch (e) {
-      log("AI", `Think cycle error: ${e.message}`);
-    }
-  }, intervalMs);
-  log("AI", `Think cycle scheduled every ${intervalMs / 1000}s`);
+      if (scheduler.isQuietTime()) {
+        scheduleNextThink();
+        return;
+      }
+
+      try {
+        log("AI", "Starting think cycle...");
+        const decision = await aiBrain.think();
+
+        if (decision && decision.recommendations?.length > 0) {
+          const evaluated =
+            decision.evaluated ||
+            decisionExecutor.evaluate(decision.recommendations);
+
+          // Get runtime autonomy level
+          const s = state.load();
+          const autonomyLevel = state.getAutonomyLevel(s, CONFIG);
+
+          if (autonomyLevel === "observe") {
+            // Observe mode: SMS only (Phase 1 behavior)
+            const sms = decisionExecutor.formatForSMS(
+              evaluated,
+              decision.summary
+            );
+            notificationManager.notify(sms, 3); // tier 3 = summary
+          } else {
+            // Active mode: execute validated recommendations
+            for (const rec of evaluated) {
+              if (!rec.validated) continue;
+
+              try {
+                const result = await decisionExecutor.execute(rec);
+                log(
+                  "AI",
+                  `Executed: ${rec.action} ${rec.project} -> ${result.executed ? "success" : "rejected: " + (result.rejected || result.result?.message)}`
+                );
+              } catch (execErr) {
+                log(
+                  "AI",
+                  `Execution error for ${rec.project}: ${execErr.message}`
+                );
+              }
+            }
+          }
+
+          log(
+            "AI",
+            `Think cycle complete: ${decision.recommendations.length} recommendations`
+          );
+        } else {
+          log("AI", "Think cycle complete: no recommendations");
+        }
+
+        // Honor nextThinkIn if AI suggested one
+        if (decision?.nextThinkIn) {
+          const suggestedSeconds = parseInt(decision.nextThinkIn, 10);
+          if (!isNaN(suggestedSeconds) && suggestedSeconds > 0) {
+            aiBrain.setNextThinkOverride(suggestedSeconds);
+            const override = aiBrain.consumeNextThinkOverride();
+            if (override) {
+              nextThinkTimeoutMs = override;
+              log(
+                "AI",
+                `Next think in ${Math.round(override / 1000)}s (AI suggested)`
+              );
+            }
+          }
+        }
+      } catch (e) {
+        log("AI", `Think cycle error: ${e.message}`);
+      }
+
+      scheduleNextThink();
+    }, intervalMs);
+  }
+
+  scheduleNextThink();
+  log(
+    "AI",
+    `Think cycle scheduled (default ${defaultIntervalMs / 1000}s, AI may adjust)`
+  );
 }
 
 startThinkCycle();
@@ -376,7 +464,7 @@ function shutdown(signal) {
   log("SHUTDOWN", "Note: Managed tmux sessions will continue running independently.");
   clearInterval(msgInterval);
   clearInterval(scanInterval);
-  if (thinkInterval) clearInterval(thinkInterval);
+  if (thinkInterval) clearTimeout(thinkInterval);
   notificationManager.stopBatchTimer();
   scheduler.stop();
   process.exit(0);
