@@ -46,6 +46,14 @@ Plans:
 - Time boxing (45-min session cap)
 - Notification tier system (urgent/summary/debug)
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Notification manager + config additions + state extensions
+- [ ] 02-02-PLAN.md — Decision executor wiring + autonomy gating + AI level command
+- [ ] 02-03-PLAN.md — Context enrichments (staleness, errors, prompts) + time boxing
+- [ ] 02-04-PLAN.md — AI morning digest + main loop execution dispatch
+
 **Success criteria:**
 - AI autonomously launches sessions for high-priority work
 - No duplicate sessions or memory exhaustion
