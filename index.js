@@ -10,6 +10,9 @@ const Scheduler = require("./lib/scheduler");
 const CommandRouter = require("./lib/commands");
 const SessionManager = require("./lib/session-manager");
 const { SignalProtocol } = require("./lib/signal-protocol");
+const ContextAssembler = require("./lib/context-assembler");
+const AIBrain = require("./lib/ai-brain");
+const DecisionExecutor = require("./lib/decision-executor");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -26,6 +29,29 @@ const scheduler = new Scheduler(CONFIG);
 const sessionManager = new SessionManager(CONFIG);
 const signalProtocol = new SignalProtocol(CONFIG.projectsDir);
 
+// ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
+const contextAssembler = new ContextAssembler({
+  scanner,
+  sessionManager,
+  processMonitor,
+  state,
+  config: CONFIG,
+});
+
+const decisionExecutor = new DecisionExecutor({
+  sessionManager,
+  messenger,
+  config: CONFIG,
+});
+
+const aiBrain = new AIBrain({
+  contextAssembler,
+  decisionExecutor,
+  state,
+  messenger,
+  config: CONFIG,
+});
+
 const commands = new CommandRouter({
   scanner,
   processMonitor,
@@ -35,6 +61,9 @@ const commands = new CommandRouter({
   signalProtocol,
   state,
   projectNames: CONFIG.projects,
+  aiBrain,
+  decisionExecutor,
+  messenger,
 });
 
 // ── Utility ─────────────────────────────────────────────────────────────────
