@@ -8,11 +8,11 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Users/claude/.nvm/versions/node/v25.6.1/bin/node</string>
-        <string>/Users/claude/projects/project-orchestrator/index.js</string>
+        <string>/Users/claude/projects/infra/project-orchestrator/index.js</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/claude/projects/project-orchestrator</string>
+    <string>/Users/claude/projects/infra/project-orchestrator</string>
 
     <key>RunAtLoad</key>
     <true/>
@@ -21,10 +21,10 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/Users/claude/projects/project-orchestrator/logs/stdout.log</string>
+    <string>/Users/claude/projects/infra/project-orchestrator/logs/stdout.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/claude/projects/project-orchestrator/logs/stderr.log</string>
+    <string>/Users/claude/projects/infra/project-orchestrator/logs/stderr.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
