@@ -13,6 +13,7 @@ const { SignalProtocol } = require("./lib/signal-protocol");
 const ContextAssembler = require("./lib/context-assembler");
 const AIBrain = require("./lib/ai-brain");
 const DecisionExecutor = require("./lib/decision-executor");
+const NotificationManager = require("./lib/notification-manager");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -29,6 +30,14 @@ const scheduler = new Scheduler(CONFIG);
 const sessionManager = new SessionManager(CONFIG);
 const signalProtocol = new SignalProtocol(CONFIG.projectsDir);
 
+// ── Notifications ────────────────────────────────────────────────────────────
+const notificationManager = new NotificationManager({
+  messenger,
+  config: CONFIG,
+  scheduler,
+});
+notificationManager.startBatchTimer();
+
 // ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
 const contextAssembler = new ContextAssembler({
   scanner,
@@ -41,6 +50,9 @@ const contextAssembler = new ContextAssembler({
 const decisionExecutor = new DecisionExecutor({
   sessionManager,
   messenger,
+  notificationManager,
+  signalProtocol,
+  state,
   config: CONFIG,
 });
 
@@ -317,6 +329,7 @@ function shutdown(signal) {
   clearInterval(msgInterval);
   clearInterval(scanInterval);
   if (thinkInterval) clearInterval(thinkInterval);
+  notificationManager.stopBatchTimer();
   scheduler.stop();
   process.exit(0);
 }
