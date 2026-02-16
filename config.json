@@ -51,7 +51,7 @@
       "sameActionMs": 300000
     },
     "resourceLimits": {
-      "minFreeMemoryMB": 2048,
+      "minFreeMemoryMB": 256,
       "maxConcurrentThinks": 1
     },
     "maxSessionDurationMs": 2700000,
