@@ -52,6 +52,14 @@
     "resourceLimits": {
       "minFreeMemoryMB": 2048,
       "maxConcurrentThinks": 1
+    },
+    "maxSessionDurationMs": 2700000,
+    "maxErrorRetries": 3,
+    "stalenessDays": 3,
+    "notifications": {
+      "dailyBudget": 20,
+      "batchIntervalMs": 14400000,
+      "urgentBypassQuiet": true
     }
   }
 }
