@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: 2 of 2 (Autonomous Execution and Intelligence)
-Plan: 2 of 4 in phase (02-01, 02-02 complete)
+Plan: 3 of 4 in phase (02-01, 02-02, 02-03 complete)
 Status: In progress
-Last activity: 2026-02-16 — Completed 02-02-PLAN.md (Decision Executor Wiring)
+Last activity: 2026-02-16 — Completed 02-03-PLAN.md (Context Enrichment and Session Time Boxing)
 
-Progress: [=======...] 5/7 plans (71%)
+Progress: [========..] 6/7 plans (86%)
 
 ## Accumulated Context
 
@@ -39,6 +39,10 @@ Progress: [=======...] 5/7 plans (71%)
 - NotificationManager optional in DecisionExecutor constructor (falls back to messenger)
 - NotificationManager wired in index.js with batch timer lifecycle
 - Blocked actions still notify (tier 3) so user sees what AI would have done
+- STALE flag skips projects with "complete" in status (they are expected idle)
+- Error info aggregated from both signal files and state retry counts
+- Session timeout scan runs in same 60s interval as proactiveScan (no extra timer)
+- Timeout notifications at tier 2 (auto-handled but user should know)
 
 ### Blockers
 - None
@@ -46,5 +50,5 @@ Progress: [=======...] 5/7 plans (71%)
 ## Session Continuity
 
 Last session: 2026-02-16
-Stopped at: Completed 02-02-PLAN.md
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
