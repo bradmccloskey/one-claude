@@ -71,6 +71,9 @@ const trustTracker = new TrustTracker({ config: CONFIG, state });
 // ── Reminder Manager (v4.0 Phase 07) ────────────────────────────────────────
 const reminderManager = new ReminderManager({ config: CONFIG, notificationManager });
 
+// ── Conversation Store (v4.0 Phase 07) ───────────────────────────────────────
+const conversationStore = new ConversationStore();
+
 // ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
 const contextAssembler = new ContextAssembler({
   scanner,
@@ -82,6 +85,7 @@ const contextAssembler = new ContextAssembler({
   healthMonitor,
   revenueTracker,
   trustTracker,
+  conversationStore,
 });
 
 const decisionExecutor = new DecisionExecutor({
@@ -100,8 +104,6 @@ const aiBrain = new AIBrain({
   messenger,
   config: CONFIG,
 });
-
-const conversationStore = new ConversationStore();
 
 const commands = new CommandRouter({
   scanner,
@@ -713,6 +715,7 @@ function shutdown(signal) {
   revenueTracker.close();
   trustTracker.close();
   reminderManager.close();
+  conversationStore.close();
   process.exit(0);
 }
 
