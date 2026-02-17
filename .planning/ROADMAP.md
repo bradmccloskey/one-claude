@@ -40,7 +40,7 @@ Plans:
 
 **Milestone Goal:** Transform ONE Claude from an observe-mode project monitor into a truly autonomous agent with session evaluation, external integrations, revenue awareness, service health monitoring, and personal assistant capabilities.
 
-- [ ] **Phase 03: Foundation Hardening** - Fix pre-existing risks and lay infrastructure all v4.0 features depend on
+- [x] **Phase 03: Foundation Hardening** - Fix pre-existing risks and lay infrastructure all v4.0 features depend on
 - [ ] **Phase 04: Session Intelligence** - Close the feedback loop so the orchestrator knows whether sessions accomplish anything
 - [ ] **Phase 05: Infrastructure Monitoring** - Know when Mac Mini services go down and have authority to respond
 - [ ] **Phase 06: Revenue & Autonomy** - Revenue awareness, trust-building mechanism, and graduated autonomy promotion
@@ -62,10 +62,12 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Centralized exec wrapper with semaphore + NL handler safety fix
-- [ ] 03-02-PLAN.md -- Conversation persistence + recommendation dedup
-- [ ] 03-03-PLAN.md -- Structured JSON output via --json-schema + semaphore wiring
-- [ ] 03-04-PLAN.md -- Test infrastructure + integration tests
+- [x] 03-01-PLAN.md -- Centralized exec wrapper with semaphore + NL handler safety fix
+- [x] 03-02-PLAN.md -- Conversation persistence + recommendation dedup
+- [x] 03-03-PLAN.md -- Structured JSON output via --json-schema + semaphore wiring
+- [x] 03-04-PLAN.md -- Test infrastructure + integration tests
+
+**Status: COMPLETE** (2026-02-17)
 
 ### Phase 04: Session Intelligence
 **Goal**: The orchestrator knows what each session accomplished, how the system is performing, and uses that knowledge to write better session prompts
@@ -136,7 +138,7 @@ Phases execute in numeric order: 03 -> 04 -> 05 -> 06 -> 07
 |-------|-----------|----------------|--------|-----------|
 | 01. AI Brain Foundation | v3.0 | 3/3 | Complete | 2026-02-16 |
 | 02. Autonomous Execution | v3.0 | 4/4 | Complete | 2026-02-16 |
-| 03. Foundation Hardening | v4.0 | 0/4 | Planned | - |
+| 03. Foundation Hardening | v4.0 | 4/4 | Complete | 2026-02-17 |
 | 04. Session Intelligence | v4.0 | 0/TBD | Not started | - |
 | 05. Infrastructure Monitoring | v4.0 | 0/TBD | Not started | - |
 | 06. Revenue & Autonomy | v4.0 | 0/TBD | Not started | - |

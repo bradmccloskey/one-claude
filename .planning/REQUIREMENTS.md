@@ -2,12 +2,12 @@
 
 ## Foundation Hardening
 
-- [ ] **FOUND-01**: NL handler uses `--max-turns 1` and does not use `--dangerously-skip-permissions`
-- [ ] **FOUND-02**: Global ClaudeSemaphore limits concurrent `claude -p` processes to 2 max
-- [ ] **FOUND-03**: All AI brain `claude -p` calls use `--json-schema` for structured output (replaces fragile 3-stage parser)
-- [ ] **FOUND-04**: Conversation history persists to `.conversation-history.json` and survives daemon restarts (TTL 24h, cap 20 messages, credential filtering)
-- [ ] **FOUND-05**: Test infrastructure exists with `node:test`, `lib/exec.js` wrapper for mocking, temp directory helpers, and core integration tests
-- [ ] **FOUND-06**: AI recommendation dedup prevents repetitive notifications in observe mode (content-based dedup, not just cooldown timers)
+- [x] **FOUND-01**: NL handler uses `--max-turns 1` and does not use `--dangerously-skip-permissions`
+- [x] **FOUND-02**: Global ClaudeSemaphore limits concurrent `claude -p` processes to 2 max
+- [x] **FOUND-03**: All AI brain `claude -p` calls use `--json-schema` for structured output (replaces fragile 3-stage parser)
+- [x] **FOUND-04**: Conversation history persists to `.conversation-history.json` and survives daemon restarts (TTL 24h, cap 20 messages, credential filtering)
+- [x] **FOUND-05**: Test infrastructure exists with `node:test`, `lib/exec.js` wrapper for mocking, temp directory helpers, and core integration tests
+- [x] **FOUND-06**: AI recommendation dedup prevents repetitive notifications in observe mode (content-based dedup, not just cooldown timers)
 
 ## Session Intelligence
 
@@ -62,12 +62,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | 03 | Pending |
-| FOUND-02 | 03 | Pending |
-| FOUND-03 | 03 | Pending |
-| FOUND-04 | 03 | Pending |
-| FOUND-05 | 03 | Pending |
-| FOUND-06 | 03 | Pending |
+| FOUND-01 | 03 | Complete |
+| FOUND-02 | 03 | Complete |
+| FOUND-03 | 03 | Complete |
+| FOUND-04 | 03 | Complete |
+| FOUND-05 | 03 | Complete |
+| FOUND-06 | 03 | Complete |
 | SESS-01 | 04 | Pending |
 | SESS-02 | 04 | Pending |
 | SESS-03 | 04 | Pending |
