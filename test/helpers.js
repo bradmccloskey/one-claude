@@ -66,7 +66,7 @@ function createMockDeps(overrides = {}) {
     },
     signalProtocol: { injectClaudeMd: () => {}, clearSignal: () => {} },
     state: {
-      load: () => ({ aiDecisionHistory: [], executionHistory: [], evaluationHistory: [], runtimeAutonomyLevel: 'observe' }),
+      load: () => ({ aiDecisionHistory: [], executionHistory: [], evaluationHistory: [], healthRestartHistory: [], runtimeAutonomyLevel: 'observe' }),
       save: () => {},
       getAutonomyLevel: () => 'observe',
       logDecision: () => {},
@@ -74,6 +74,8 @@ function createMockDeps(overrides = {}) {
       logEvaluation: () => {},
       getRecentEvaluations: () => [],
       getErrorRetryCount: () => 0,
+      logHealthRestart: () => {},
+      getRecentHealthRestarts: () => [],
     },
     messenger: { send: () => {} },
     gitTracker: {
@@ -96,6 +98,18 @@ function createMockDeps(overrides = {}) {
         score: 3, recommendation: 'continue',
         accomplishments: [], failures: [], reasoning: 'mock',
       }),
+    },
+    healthMonitor: {
+      checkAll: async () => {},
+      getLastResults: () => ({}),
+      formatForContext: () => 'Service Health: all mocked',
+      getStats: () => ({ total: 0, up: 0, down: 0, services: [] }),
+    },
+    mcpBridge: {
+      queryMCP: async () => 'mock MCP response',
+      isServerAvailable: () => true,
+      getCircuitBreakerStates: () => ({}),
+      formatForContext: () => 'MCP Capabilities: all mocked',
     },
     config: { ai: { enabled: true, model: 'sonnet', autonomyLevel: 'observe' }, projects: [] },
     projectNames: [],
