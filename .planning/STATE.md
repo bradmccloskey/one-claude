@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 06 of 07 (Revenue & Autonomy)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 06-01-PLAN.md (Revenue Tracker SQLite Foundation)
+Last activity: 2026-02-17 -- Completed 06-02-PLAN.md (Trust Tracker & Promotion Recommendations)
 
-Progress: [█████████████████████░░░] 88% (21/24 plans complete)
+Progress: [██████████████████████░░] 92% (22/24 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21 (7 v3.0 + 14 v4.0)
+- Total plans completed: 22 (7 v3.0 + 15 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -32,7 +32,7 @@ Progress: [█████████████████████░░
 | 03 | 4/4 | ~14m | ~4m |
 | 04 | 5/5 | ~12m | ~2.4m |
 | 05 | 4/4 | ~12m | ~3m |
-| 06 | 1/4 | ~3m | ~3m |
+| 06 | 2/4 | ~6m | ~3m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -49,7 +49,8 @@ Progress: [█████████████████████░░
 - 05-03 completed in ~2m (2 tasks, no deviations)
 - 05-04 completed in ~5m (2 tasks, 1 deviation: module cache clearing for execSync)
 - 06-01 completed in ~3m (2 tasks, no deviations)
-- Trend: Phase 06 started. 21/24 plans done.
+- 06-02 completed in ~3m (2 tasks, config.json already committed by parallel 06-01)
+- Trend: Phase 06 in progress. 22/24 plans done.
 
 ## Accumulated Context
 
@@ -106,6 +107,10 @@ Progress: [█████████████████████░░
 
 - 06-01: Lazy DB initialization -- orchestrator.db only created on first _ensureDb() call, not in constructor
 - 06-01: NULL vs zero distinction -- NULL means API unreachable (no data), zero means genuinely zero revenue
+- 06-02: TrustTracker shares orchestrator.db with RevenueTracker via lazy init
+- 06-02: observe->cautious never automated (policy decision, human-only)
+- 06-02: checkPromotion() returns recommendation string, never calls setAutonomyLevel()
+- 06-02: _promotionSent flag prevents duplicate SMS at same level (resets on level change)
 
 ### Decisions (Phase 05)
 
@@ -125,5 +130,5 @@ Progress: [█████████████████████░░
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 06-01-PLAN.md (Revenue Tracker SQLite Foundation)
+Stopped at: Completed 06-02-PLAN.md (Trust Tracker & Promotion Recommendations)
 Resume file: None

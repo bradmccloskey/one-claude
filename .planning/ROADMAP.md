@@ -117,11 +117,13 @@ Plans:
   3. When trust thresholds are crossed (e.g., 30+ sessions at cautious with avg score >= 3.5), the user receives a promotion recommendation SMS -- the orchestrator never self-promotes
   4. The user receives a weekly revenue summary SMS on Sunday mornings with per-source breakdown and week-over-week trends
   5. The user receives an evening wind-down digest at 9:45 PM summarizing the day's session accomplishments, commits across projects, and tomorrow's plan
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
+- [ ] 06-01-PLAN.md -- Revenue Tracker + SQLite foundation (XMR mining API, MLX health endpoint, NULL vs zero, data age)
+- [x] 06-02-PLAN.md -- Trust Tracker + promotion recommendations (trust_summary table, metric accumulation, threshold checking)
+- [ ] 06-03-PLAN.md -- Context assembly + index.js wiring (revenue/trust in AI context, scan loop integration, shutdown)
+- [ ] 06-04-PLAN.md -- Scheduled digests + tests (evening 9:45 PM digest, Sunday 7 AM revenue summary, integration tests)
 
 ### Phase 07: Personal Assistant
 **Goal**: The orchestrator becomes a personal assistant that remembers conversations, sets reminders, equips sessions with external tools, and learns from experience
@@ -150,5 +152,5 @@ Phases execute in numeric order: 03 -> 04 -> 05 -> 06 -> 07
 | 03. Foundation Hardening | v4.0 | 4/4 | Complete | 2026-02-17 |
 | 04. Session Intelligence | v4.0 | 5/5 | Complete | 2026-02-17 |
 | 05. Infrastructure Monitoring | v4.0 | 4/4 | Complete | 2026-02-17 |
-| 06. Revenue & Autonomy | v4.0 | 0/TBD | Not started | - |
+| 06. Revenue & Autonomy | v4.0 | 2/4 | In Progress | - |
 | 07. Personal Assistant | v4.0 | 0/TBD | Not started | - |
