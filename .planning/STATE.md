@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** ONE Claude to rule all the Claudes -- central AI brain that autonomously manages all Claude Code sessions across ~19 projects on a Mac Mini.
-**Current focus:** Phase 05 COMPLETE -- Ready for Phase 06 (Revenue & Autonomy)
+**Current focus:** Phase 06 in progress -- Revenue & Autonomy
 
 ## Current Position
 
-Phase: 05 of 07 (Infrastructure Monitoring) -- COMPLETE
-Plan: 4 of 4 in current phase (all complete)
-Status: Phase complete
-Last activity: 2026-02-17 -- Completed 05-04-PLAN.md (Integration Tests)
+Phase: 06 of 07 (Revenue & Autonomy)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-17 -- Completed 06-01-PLAN.md (Revenue Tracker SQLite Foundation)
 
-Progress: [████████████████████] 100% (20/20 plans complete)
+Progress: [█████████████████████░░░] 88% (21/24 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20 (7 v3.0 + 13 v4.0)
+- Total plans completed: 21 (7 v3.0 + 14 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -32,6 +32,7 @@ Progress: [████████████████████] 100% (2
 | 03 | 4/4 | ~14m | ~4m |
 | 04 | 5/5 | ~12m | ~2.4m |
 | 05 | 4/4 | ~12m | ~3m |
+| 06 | 1/4 | ~3m | ~3m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -47,7 +48,8 @@ Progress: [████████████████████] 100% (2
 - 05-02 completed in ~3m (2 tasks, no deviations)
 - 05-03 completed in ~2m (2 tasks, no deviations)
 - 05-04 completed in ~5m (2 tasks, 1 deviation: module cache clearing for execSync)
-- Trend: Phase 05 complete. 20/20 plans done. Ready for Phase 06.
+- 06-01 completed in ~3m (2 tasks, no deviations)
+- Trend: Phase 06 started. 21/24 plans done.
 
 ## Accumulated Context
 
@@ -100,6 +102,11 @@ Progress: [████████████████████] 100% (2
 - 04-04: Duplicate evaluation guard uses timestamp comparison (evaluatedAt > startedAt)
 - 04-05: Module cache patching for mocking exec.claudePWithSemaphore in tests (restored in afterEach)
 
+### Decisions (Phase 06)
+
+- 06-01: Lazy DB initialization -- orchestrator.db only created on first _ensureDb() call, not in constructor
+- 06-01: NULL vs zero distinction -- NULL means API unreachable (no data), zero means genuinely zero revenue
+
 ### Decisions (Phase 05)
 
 - 05-01: HTTP/TCP checks parallel via Promise.allSettled; process/docker sequential (execSync blocks)
@@ -118,5 +125,5 @@ Progress: [████████████████████] 100% (2
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 05-04-PLAN.md (Integration Tests) -- Phase 05 COMPLETE
-Resume file: None (Phase 06 not yet planned)
+Stopped at: Completed 06-01-PLAN.md (Revenue Tracker SQLite Foundation)
+Resume file: None
