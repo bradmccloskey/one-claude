@@ -274,7 +274,7 @@ async function pollMessages() {
     for (const msg of messages) {
       log("MSG", `Received: "${msg.text}" (ROWID: ${msg.ROWID})`);
 
-      const response = commands.route(msg.text);
+      const response = await commands.route(msg.text);
       const preview = response.length > 80 ? response.substring(0, 80) + "..." : response;
       log("REPLY", preview);
 
@@ -483,10 +483,10 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
 const readline = require("readline");
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: "orch> " });
 rl.prompt();
-rl.on("line", (line) => {
+rl.on("line", async (line) => {
   const input = line.trim();
   if (!input) { rl.prompt(); return; }
-  const response = commands.route(input);
+  const response = await commands.route(input);
   console.log("\n" + response + "\n");
   rl.prompt();
 });
