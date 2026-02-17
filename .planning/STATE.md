@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 03 of 07 (Foundation Hardening)
-Plan: 2 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-17 -- Completed 03-02-PLAN.md (conversation persistence + dedup)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-17 -- Completed 03-04-PLAN.md (test infrastructure + module tests)
 
-Progress: [=============.........] 60% (9/15 plans complete)
+Progress: [===============.......] 73% (11/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9 (7 v3.0 + 2 v4.0)
+- Total plans completed: 10 (7 v3.0 + 3 v4.0)
 - Average duration: ~4m (v4.0 plans)
 - Total execution time: N/A
 
@@ -29,11 +29,12 @@ Progress: [=============.........] 60% (9/15 plans complete)
 |-------|-------|-------|----------|
 | 01 | 3 | N/A | N/A |
 | 02 | 4 | N/A | N/A |
-| 03 | 2/4 | ~8m | ~4m |
+| 03 | 3/4 | ~11m | ~4m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
 - 03-02 completed in ~6m (2 tasks, no deviations)
+- 03-03 completed in ~3m (2 tasks, 1 minor deviation)
 - Trend: Fast
 
 ## Accumulated Context
@@ -53,6 +54,7 @@ Progress: [=============.........] 60% (9/15 plans complete)
 - ~~Repetitive AI recommendations (dedup not working in observe mode) -- FOUND-06~~ FIXED in 03-02
 - ~~Conversation history lost on restart (in-memory only) -- FOUND-04~~ FIXED in 03-02
 - ~~NL handler uses --dangerously-skip-permissions with no --max-turns -- FOUND-01~~ FIXED in 03-01
+- ~~Fragile 3-stage JSON parser in AI brain -- FOUND-03~~ FIXED in 03-03
 - No test suite -- FOUND-05
 - Only observe mode has been tested in production
 
@@ -69,9 +71,11 @@ Progress: [=============.........] 60% (9/15 plans complete)
 - 03-02: djb2 hash for dedup (no crypto dependency needed)
 - 03-02: 1-hour dedup TTL, in-memory only (resets on restart, acceptable tradeoff)
 - 03-02: formatForSMS returns null when all recommendations deduped
+- 03-03: Keep JSON.parse safety-net despite --json-schema (defense in depth, zero cost)
+- 03-03: _handleContextual() NL call is dead code -- not touched
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 03-02-PLAN.md
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None
