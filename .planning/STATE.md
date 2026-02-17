@@ -2,12 +2,10 @@
 
 ## Current Position
 
-Phase: 2 of 2 — COMPLETE
-Plan: 4 of 4 in phase (all complete)
-Status: All phases complete — v3.0 milestone ready for audit
-Last activity: 2026-02-16 — Phase 02 verified (21/21 must-haves)
-
-Progress: [==========] 7/7 plans (100%)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-16 — Milestone v4.0 started
 
 ## Accumulated Context
 
@@ -17,36 +15,21 @@ Progress: [==========] 7/7 plans (100%)
 - User wants fully autonomous operation with minimal interruption
 - **Use `claude -p` (Max plan) instead of Anthropic SDK** — zero cost, zero dependencies
 - Default to Sonnet model (free with Max, better quality than Haiku)
-- 3 new modules: ai-brain.js, context-assembler.js, decision-executor.js
-- Cost Tracker module removed (not needed with Max plan)
-- 2 phases instead of 3 (cost infrastructure layer eliminated)
+- 13 modules total: 10 from v2.0 + 3 new (ai-brain, context-assembler, decision-executor) + notification-manager
 - Safety-first: observe mode before autonomous execution
-- AI disabled by default, observe-only autonomy, 5-minute think interval
-- Prompt uses natural language text with --- separators (not JSON context)
-- priorities.json is gitignored runtime user state
-- Pass prompt to claude -p via execSync stdin pipe (no temp files)
-- 30-second timeout on claude -p execution (sub-30s think cycle target)
-- Three-stage JSON parser: direct parse, markdown fences, outermost braces
-- DecisionExecutor.execute() is a no-op scaffold in Phase 1 (observe only)
-- setTimeout for async think dispatch in sync route() method
-- All AI command handlers are null-safe (work without AI configured)
-- NotificationManager wraps Messenger (prioritization/batching) rather than replacing it
-- Tier 1 (URGENT) always bypasses daily SMS budget and quiet hours
-- incrementVersion() is explicit, not auto-incremented in save()
-- Runtime autonomy level stored in .state.json, config.json holds the default
-- Autonomy gating matrix as static class property on DecisionExecutor
-- execute() is async for forward-compatible precondition checks
-- NotificationManager optional in DecisionExecutor constructor (falls back to messenger)
-- NotificationManager wired in index.js with batch timer lifecycle
-- Blocked actions still notify (tier 3) so user sees what AI would have done
-- STALE flag skips projects with "complete" in status (they are expected idle)
-- Error info aggregated from both signal files and state retry counts
-- Session timeout scan runs in same 60s interval as proactiveScan (no extra timer)
-- Timeout notifications at tier 2 (auto-handled but user should know)
-- Think cycle uses recursive setTimeout for variable AI-suggested intervals
-- Observe mode SMS routed through notificationManager at tier 3
-- AI digest covers 12-hour overnight window with 1500 char truncation
-- nextThinkIn bounded to 60s-1800s to prevent DoS or unresponsiveness
+- v4.0 focus: session evaluation, external integrations, revenue awareness, graduated autonomy
+- MCP servers (GitHub, Docker, Calendar, Reminders, Memory) for external integrations
+- Event-driven architecture (fs.watch) to replace polling where possible
+- Multi-model strategy: Haiku for routine, Sonnet for decisions, Opus for complex analysis
+
+### Known Issues (from v3.0 review)
+- Repetitive AI recommendations (dedup not working in observe mode)
+- Conversation history lost on restart (in-memory only)
+- priorities.json is empty (no user-defined priorities)
+- ProcessMonitor._matchProject() bug with subdirectories
+- No test suite
+- _handleNaturalLanguage uses --dangerously-skip-permissions with no --max-turns
+- Only observe mode has been tested in production
 
 ### Blockers
 - None
@@ -54,5 +37,5 @@ Progress: [==========] 7/7 plans (100%)
 ## Session Continuity
 
 Last session: 2026-02-16
-Stopped at: Phase 02 complete and verified — all phases done
+Stopped at: Defining v4.0 milestone requirements
 Resume file: None

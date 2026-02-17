@@ -2,52 +2,33 @@
 
 ## Core Value
 
-ONE Claude to rule all the Claudes — a central AI brain that autonomously manages, prioritizes, and coordinates all Claude Code sessions across ~18 projects on a Mac Mini.
+ONE Claude to rule all the Claudes — a central AI brain that autonomously manages, prioritizes, and coordinates all Claude Code sessions across ~19 projects on a Mac Mini. The ultimate personal AI agent orchestrator, project manager, and assistant.
 
-## Current State (v2.0)
+## Current Milestone: v4.0 — Autonomous Agent with External Integrations
 
-The orchestrator is a **process manager** — it can start/stop/restart Claude Code sessions, detect signal files, and relay SMS commands. But it has **no intelligence**. It doesn't decide what to work on, evaluate progress, or make autonomous decisions. The human is still the brain.
-
-**What works:**
-- iMessage/SMS bot reads commands, routes to handlers
-- tmux session management (start/stop/restart Claude Code instances)
-- Signal protocol: sessions write needs-input.json, completed.json, error.json
-- Proactive scanning: STATE.md changes, signal files, session ended
-- Morning digest, quiet hours, pause/unpause per project
-- Conversation context tracking for natural text interaction
-- launchd auto-start on boot
-
-**What's missing:**
-- No AI decision-making (Anthropic API not integrated)
-- No autonomous prioritization (doesn't decide what to work on)
-- No session output evaluation (can't judge if work is good)
-- No cross-project awareness (doesn't prevent conflicts)
-- No revenue/impact-based ranking
-- No proactive session launching (waits for user "start" command)
-
-## Current Milestone: v3.0 — AI-Powered Orchestrator
-
-**Goal:** Transform the process manager into an intelligent orchestrator with Claude as the central brain, capable of autonomous decision-making about what to work on, evaluating session progress, and only involving the human for real decisions.
+**Goal:** Transform ONE Claude from an observe-mode project monitor into a truly autonomous agent with session evaluation, external service integrations (GitHub, Docker, Calendar), revenue awareness, service health monitoring, and personal assistant capabilities.
 
 **Target features:**
-- Claude CLI integration via `claude -p` (zero cost with Max plan, zero dependencies)
-- Autonomous work prioritization based on project state, revenue impact, deadlines
-- Session output evaluation and progress judgment
-- Proactive session launching (doesn't wait for user command)
-- Cross-project awareness to prevent conflicts and optimize throughput
-- Intelligent SMS — sends summaries and decisions, not raw data
-- Human-in-the-loop only for genuine decisions, not routine approvals
+- Session output evaluation (read tmux output, check git diffs, judge quality)
+- Git & GitHub integration (commits, PRs, issues as ground truth)
+- MCP server integrations (Docker, Calendar, Reminders, Memory graph)
+- Service health monitoring (HTTP pings for running services, auto-recovery)
+- Revenue intelligence (track actual earnings, revenue-weighted priorities)
+- Graduated autonomy rollout (cautious -> moderate -> full with guardrails)
+- Personal assistant layer (smart briefings, proactive reminders, financial rollups)
+- Foundation hardening (tests, conversation persistence, dedup fix, priorities)
 
 ## Tech Stack
 
 - **Runtime:** Node.js (existing)
-- **LLM:** `claude -p` via child_process (new — zero dependencies, covered by Max plan)
+- **LLM:** `claude -p` via child_process (zero dependencies, covered by Max plan)
 - **Messaging:** macOS iMessage via AppleScript JXA (existing)
 - **Sessions:** tmux + Claude Code CLI (existing)
 - **State:** File-based JSON + .planning/ STATE.md (existing)
 - **Service:** launchd plist (existing)
+- **MCP integrations:** GitHub, Docker, Google Calendar, Apple Reminders, Memory (new)
 
-## Validated Requirements (v2.0)
+## Validated Requirements (v3.0)
 
 - [x] SMS command interface with natural language routing
 - [x] tmux session lifecycle management
@@ -57,6 +38,18 @@ The orchestrator is a **process manager** — it can start/stop/restart Claude C
 - [x] Conversation context for multi-turn SMS
 - [x] CLAUDE.md injection for managed sessions
 - [x] launchd auto-start service
+- [x] AI brain with `claude -p` think cycles (5 min interval)
+- [x] Context assembler (project state -> structured prompt)
+- [x] Decision executor with action allowlist and cooldowns
+- [x] 4 autonomy levels (observe/cautious/moderate/full)
+- [x] 4-tier notification system (urgent/action/summary/debug)
+- [x] AI-generated morning digest
+- [x] Session time boxing (45 min cap)
+- [x] Proactive staleness detection
+- [x] Smart error recovery with retry counting
+- [x] Session prompt engineering
+- [x] Natural language SMS (all messages through AI when enabled)
+- [x] priorities.json for user overrides
 
 ---
 
