@@ -22,6 +22,7 @@ const { SessionEvaluator } = require("./lib/session-evaluator");
 const RevenueTracker = require("./lib/revenue-tracker");
 const TrustTracker = require("./lib/trust-tracker");
 const ReminderManager = require("./lib/reminder-manager");
+const SessionLearner = require("./lib/session-learner");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -45,6 +46,7 @@ const sessionEvaluator = new SessionEvaluator({
   gitTracker,
   state,
   config: CONFIG,
+  sessionLearner,
 });
 
 // ── Notifications ────────────────────────────────────────────────────────────
@@ -71,6 +73,9 @@ const trustTracker = new TrustTracker({ config: CONFIG, state });
 // ── Reminder Manager (v4.0 Phase 07) ────────────────────────────────────────
 const reminderManager = new ReminderManager({ config: CONFIG, notificationManager });
 
+// ── Session Learner (v4.0 Phase 07) ─────────────────────────────────────────
+const sessionLearner = new SessionLearner({ config: CONFIG });
+
 // ── Conversation Store (v4.0 Phase 07) ───────────────────────────────────────
 const conversationStore = new ConversationStore();
 
@@ -86,6 +91,7 @@ const contextAssembler = new ContextAssembler({
   revenueTracker,
   trustTracker,
   conversationStore,
+  sessionLearner,
 });
 
 const decisionExecutor = new DecisionExecutor({
@@ -715,6 +721,7 @@ function shutdown(signal) {
   revenueTracker.close();
   trustTracker.close();
   reminderManager.close();
+  sessionLearner.close();
   conversationStore.close();
   process.exit(0);
 }

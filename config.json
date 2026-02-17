@@ -175,5 +175,10 @@
   "reminders": {
     "enabled": true,
     "timezone": "America/New_York"
+  },
+  "learning": {
+    "enabled": true,
+    "minEvaluations": 50,
+    "analysisInterval": 10
   }
 }
