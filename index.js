@@ -19,6 +19,8 @@ const GitTracker = require("./lib/git-tracker");
 const ResourceMonitor = require("./lib/resource-monitor");
 const HealthMonitor = require("./lib/health-monitor");
 const { SessionEvaluator } = require("./lib/session-evaluator");
+const RevenueTracker = require("./lib/revenue-tracker");
+const TrustTracker = require("./lib/trust-tracker");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -59,6 +61,12 @@ const healthMonitor = new HealthMonitor({
   state,
 });
 
+// ── Revenue Tracker (v4.0 Phase 06) ─────────────────────────────────────────
+const revenueTracker = new RevenueTracker({ config: CONFIG });
+
+// ── Trust Tracker (v4.0 Phase 06) ───────────────────────────────────────────
+const trustTracker = new TrustTracker({ config: CONFIG, state });
+
 // ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
 const contextAssembler = new ContextAssembler({
   scanner,
@@ -68,6 +76,8 @@ const contextAssembler = new ContextAssembler({
   config: CONFIG,
   resourceMonitor,
   healthMonitor,
+  revenueTracker,
+  trustTracker,
 });
 
 const decisionExecutor = new DecisionExecutor({
@@ -392,6 +402,8 @@ console.log(`║  Quiet:     ${(CONFIG.quietHours.start + "-" + CONFIG.quietHour
 console.log(`║  Digest:    ${CONFIG.morningDigest.cron.padEnd(33)}║`);
 console.log(`║  AI:        ${(CONFIG.ai?.enabled ? "enabled (" + CONFIG.ai.autonomyLevel + ")" : "disabled").padEnd(33)}║`);
 console.log(`║  Health:    ${(CONFIG.health?.enabled ? CONFIG.health.services.length + " services" : "disabled").padEnd(33)}║`);
+console.log(`║  Revenue:  ${(CONFIG.revenue?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
+console.log(`║  Trust:    ${(CONFIG.trust?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
 console.log("╚═══════════════════════════════════════════════╝");
 console.log("");
 
@@ -420,12 +432,44 @@ if (existingSessions.length > 0) {
 // Start scheduled jobs
 scheduler.startMorningDigest(sendDigest);
 
+// Daily trust promotion check (10 AM)
+if (CONFIG.trust?.enabled) {
+  const promotionJob = require('node-cron').schedule(
+    CONFIG.trust.promotionCheckCron || '0 10 * * *',
+    () => {
+      try {
+        const recommendation = trustTracker.checkPromotion();
+        if (recommendation) {
+          notificationManager.notify(recommendation, 2); // tier 2 = action needed
+          log('TRUST', 'Promotion recommendation sent');
+        }
+      } catch (e) {
+        log('TRUST', `Promotion check error: ${e.message}`);
+      }
+    },
+    { timezone: CONFIG.quietHours?.timezone || 'America/New_York' }
+  );
+}
+
 // Start polling loops
 const msgInterval = setInterval(pollMessages, CONFIG.pollIntervalMs);
+let scanCount = 0;
 const scanInterval = setInterval(() => {
+  scanCount++;
   proactiveScan();
   checkSessionTimeouts();
   healthMonitor.checkAll();
+
+  // Revenue collection every N scans (default 5 = every 5 minutes)
+  const collectionInterval = CONFIG.revenue?.collectionIntervalScans || 5;
+  if (CONFIG.revenue?.enabled && scanCount % collectionInterval === 0) {
+    revenueTracker.collect().catch(e => log('REVENUE', `Collection error: ${e.message}`));
+  }
+
+  // Trust metrics update every scan
+  if (CONFIG.trust?.enabled) {
+    try { trustTracker.update(); } catch (e) { log('TRUST', `Update error: ${e.message}`); }
+  }
 }, CONFIG.scanIntervalMs);
 
 // Initial poll
@@ -549,6 +593,8 @@ function shutdown(signal) {
   if (thinkInterval) clearTimeout(thinkInterval);
   notificationManager.stopBatchTimer();
   scheduler.stop();
+  revenueTracker.close();
+  trustTracker.close();
   process.exit(0);
 }
 
