@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 03 of 07 (Foundation Hardening)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 03-01-PLAN.md (centralized exec layer)
+Last activity: 2026-02-17 -- Completed 03-02-PLAN.md (conversation persistence + dedup)
 
-Progress: [============..........] 53% (8/15 plans complete)
+Progress: [=============.........] 60% (9/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8 (7 v3.0 + 1 v4.0)
-- Average duration: ~2m (03-01 only, pre-metrics for earlier)
+- Total plans completed: 9 (7 v3.0 + 2 v4.0)
+- Average duration: ~4m (v4.0 plans)
 - Total execution time: N/A
 
 **By Phase:**
@@ -29,10 +29,11 @@ Progress: [============..........] 53% (8/15 plans complete)
 |-------|-------|-------|----------|
 | 01 | 3 | N/A | N/A |
 | 02 | 4 | N/A | N/A |
-| 03 | 1/4 | ~2m | ~2m |
+| 03 | 2/4 | ~8m | ~4m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
+- 03-02 completed in ~6m (2 tasks, no deviations)
 - Trend: Fast
 
 ## Accumulated Context
@@ -49,8 +50,8 @@ Progress: [============..........] 53% (8/15 plans complete)
 
 ### Known Issues (from v3.0)
 
-- Repetitive AI recommendations (dedup not working in observe mode) -- FOUND-06
-- Conversation history lost on restart (in-memory only) -- FOUND-04
+- ~~Repetitive AI recommendations (dedup not working in observe mode) -- FOUND-06~~ FIXED in 03-02
+- ~~Conversation history lost on restart (in-memory only) -- FOUND-04~~ FIXED in 03-02
 - ~~NL handler uses --dangerously-skip-permissions with no --max-turns -- FOUND-01~~ FIXED in 03-01
 - No test suite -- FOUND-05
 - Only observe mode has been tested in production
@@ -64,9 +65,13 @@ Progress: [============..........] 53% (8/15 plans complete)
 - 03-01: claudeP is synchronous (execSync), semaphore gates entry async -- intentional design
 - 03-01: Direct claudeP (no semaphore) for initial migration; 03-03 adds semaphore to production callers
 - 03-01: session-manager.js --dangerously-skip-permissions left intact (interactive sessions, not claude -p)
+- 03-02: Synchronous file I/O for ConversationStore (matches state.js pattern)
+- 03-02: djb2 hash for dedup (no crypto dependency needed)
+- 03-02: 1-hour dedup TTL, in-memory only (resets on restart, acceptable tradeoff)
+- 03-02: formatForSMS returns null when all recommendations deduped
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 03-01-PLAN.md
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
