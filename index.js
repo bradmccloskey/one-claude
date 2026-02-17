@@ -17,6 +17,7 @@ const NotificationManager = require("./lib/notification-manager");
 const ConversationStore = require("./lib/conversation-store");
 const GitTracker = require("./lib/git-tracker");
 const ResourceMonitor = require("./lib/resource-monitor");
+const HealthMonitor = require("./lib/health-monitor");
 const { SessionEvaluator } = require("./lib/session-evaluator");
 
 // ── Config ──────────────────────────────────────────────────────────────────
@@ -51,6 +52,13 @@ const notificationManager = new NotificationManager({
 });
 notificationManager.startBatchTimer();
 
+// ── Health Monitor (v4.0 Phase 05) ──────────────────────────────────────────
+const healthMonitor = new HealthMonitor({
+  config: CONFIG,
+  notificationManager,
+  state,
+});
+
 // ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
 const contextAssembler = new ContextAssembler({
   scanner,
@@ -59,6 +67,7 @@ const contextAssembler = new ContextAssembler({
   state,
   config: CONFIG,
   resourceMonitor,
+  healthMonitor,
 });
 
 const decisionExecutor = new DecisionExecutor({
@@ -382,6 +391,7 @@ console.log(`║  Scan:      ${(CONFIG.scanIntervalMs + "ms").padEnd(33)}║`);
 console.log(`║  Quiet:     ${(CONFIG.quietHours.start + "-" + CONFIG.quietHours.end).padEnd(33)}║`);
 console.log(`║  Digest:    ${CONFIG.morningDigest.cron.padEnd(33)}║`);
 console.log(`║  AI:        ${(CONFIG.ai?.enabled ? "enabled (" + CONFIG.ai.autonomyLevel + ")" : "disabled").padEnd(33)}║`);
+console.log(`║  Health:    ${(CONFIG.health?.enabled ? CONFIG.health.services.length + " services" : "disabled").padEnd(33)}║`);
 console.log("╚═══════════════════════════════════════════════╝");
 console.log("");
 
@@ -415,6 +425,7 @@ const msgInterval = setInterval(pollMessages, CONFIG.pollIntervalMs);
 const scanInterval = setInterval(() => {
   proactiveScan();
   checkSessionTimeouts();
+  healthMonitor.checkAll();
 }, CONFIG.scanIntervalMs);
 
 // Initial poll
