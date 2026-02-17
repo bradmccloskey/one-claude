@@ -171,5 +171,9 @@
     "enabled": true,
     "cron": "0 7 * * 0",
     "timezone": "America/New_York"
+  },
+  "reminders": {
+    "enabled": true,
+    "timezone": "America/New_York"
   }
 }

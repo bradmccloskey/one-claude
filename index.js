@@ -21,6 +21,7 @@ const HealthMonitor = require("./lib/health-monitor");
 const { SessionEvaluator } = require("./lib/session-evaluator");
 const RevenueTracker = require("./lib/revenue-tracker");
 const TrustTracker = require("./lib/trust-tracker");
+const ReminderManager = require("./lib/reminder-manager");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -67,6 +68,9 @@ const revenueTracker = new RevenueTracker({ config: CONFIG });
 // ── Trust Tracker (v4.0 Phase 06) ───────────────────────────────────────────
 const trustTracker = new TrustTracker({ config: CONFIG, state });
 
+// ── Reminder Manager (v4.0 Phase 07) ────────────────────────────────────────
+const reminderManager = new ReminderManager({ config: CONFIG, notificationManager });
+
 // ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
 const contextAssembler = new ContextAssembler({
   scanner,
@@ -112,6 +116,7 @@ const commands = new CommandRouter({
   decisionExecutor,
   messenger,
   conversationStore,
+  reminderManager,
 });
 
 // ── Utility ─────────────────────────────────────────────────────────────────
@@ -508,6 +513,7 @@ console.log(`║  AI:        ${(CONFIG.ai?.enabled ? "enabled (" + CONFIG.ai.aut
 console.log(`║  Health:    ${(CONFIG.health?.enabled ? CONFIG.health.services.length + " services" : "disabled").padEnd(33)}║`);
 console.log(`║  Revenue:  ${(CONFIG.revenue?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
 console.log(`║  Trust:    ${(CONFIG.trust?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
+console.log(`║  Reminders: ${(CONFIG.reminders?.enabled !== false ? 'enabled' : 'disabled').padEnd(33)}║`);
 console.log("╚═══════════════════════════════════════════════╝");
 console.log("");
 
@@ -575,6 +581,11 @@ const scanInterval = setInterval(() => {
   // Trust metrics update every scan
   if (CONFIG.trust?.enabled) {
     try { trustTracker.update(); } catch (e) { log('TRUST', `Update error: ${e.message}`); }
+  }
+
+  // Reminder check every scan (fire pending reminders)
+  if (CONFIG.reminders?.enabled !== false) {
+    try { reminderManager.checkAndFire(); } catch (e) { log('REMINDER', `Check error: ${e.message}`); }
   }
 }, CONFIG.scanIntervalMs);
 
@@ -701,6 +712,7 @@ function shutdown(signal) {
   scheduler.stop();
   revenueTracker.close();
   trustTracker.close();
+  reminderManager.close();
   process.exit(0);
 }
 
