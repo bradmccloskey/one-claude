@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** ONE Claude to rule all the Claudes -- central AI brain that autonomously manages all Claude Code sessions across ~19 projects on a Mac Mini.
-**Current focus:** Phase 06 COMPLETE -- Ready for Phase 07 (Personal Assistant)
+**Current focus:** Phase 07 IN PROGRESS -- Personal Assistant (final phase of v4.0)
 
 ## Current Position
 
-Phase: 06 of 07 (Revenue & Autonomy)
-Plan: 4 of 4 in current phase
-Status: Phase complete
-Last activity: 2026-02-17 -- Completed 06-04-PLAN.md (Scheduled Digests + Tests)
+Phase: 07 of 07 (Personal Assistant)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-17 -- Completed 07-01-PLAN.md (Reminder Manager)
 
-Progress: [████████████████████████] 100% (24/24 plans complete)
+Progress: [█████████████████████████] 100% (25/28 v3.0+v4.0 plans complete, 3 Phase 07 plans pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24 (7 v3.0 + 17 v4.0)
+- Total plans completed: 25 (7 v3.0 + 18 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -33,6 +33,7 @@ Progress: [███████████████████████
 | 04 | 5/5 | ~12m | ~2.4m |
 | 05 | 4/4 | ~12m | ~3m |
 | 06 | 4/4 | ~14m | ~3.5m |
+| 07 | 1/4 | ~2.5m | ~2.5m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -52,7 +53,8 @@ Progress: [███████████████████████
 - 06-02 completed in ~3m (2 tasks, config.json already committed by parallel 06-01)
 - 06-03 completed in ~2m (3 tasks, no deviations)
 - 06-04 completed in ~6m (4 tasks, no deviations)
-- Trend: ALL PHASES COMPLETE. 24/24 plans done.
+- 07-01 completed in ~2.5m (3 tasks, no deviations)
+- Trend: Phase 07 in progress. 25/28 plans done.
 
 ## Accumulated Context
 
@@ -134,8 +136,16 @@ Progress: [███████████████████████
 - 05-03: Unknown MCP servers assumed available (forward compatible, no breaker created)
 - 05-04: Module cache clearing for execSync patching (health-monitor.js destructures at load time)
 
+### Decisions (Phase 07)
+
+- 07-01: Past-time reminders fire immediately via checkAndFire (worst-case 60s latency)
+- 07-01: URGENT tier (1) for reminder notifications (bypasses quiet hours and SMS budget)
+- 07-01: AI calculates fireAt timestamp in NL handler (zero new dependencies)
+- 07-01: REMINDER_JSON pattern at end of AI response (structured extraction from free-form text)
+- 07-01: text LIKE %query% for fuzzy cancel (simple and sufficient for SMS)
+
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 06-04-PLAN.md (Scheduled Digests + Tests) -- Phase 06 COMPLETE, ALL PLANS DONE
+Stopped at: Completed 07-01-PLAN.md (Reminder Manager)
 Resume file: None
