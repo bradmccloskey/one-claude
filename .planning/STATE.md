@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 04 of 07 (Session Intelligence)
-Plan: 3 of 5 in current phase
+Plan: 4 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 04-02-PLAN.md (Session Evaluator) and 04-03-PLAN.md
+Last activity: 2026-02-17 -- Completed 04-04-PLAN.md (Integration Wiring)
 
-Progress: [=================...] 87% (14/16 plans complete)
+Progress: [==================..] 93% (15/16 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14 (7 v3.0 + 7 v4.0)
+- Total plans completed: 15 (7 v3.0 + 8 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -30,7 +30,7 @@ Progress: [=================...] 87% (14/16 plans complete)
 | 01 | 3 | N/A | N/A |
 | 02 | 4 | N/A | N/A |
 | 03 | 4/4 | ~14m | ~4m |
-| 04 | 3/5 | ~6m | ~2m |
+| 04 | 4/5 | ~10m | ~2.5m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -40,7 +40,8 @@ Progress: [=================...] 87% (14/16 plans complete)
 - 04-01 completed in ~3m (2 tasks, no deviations)
 - 04-02 completed in ~2m (2 tasks, no deviations)
 - 04-03 completed in ~1m (2 tasks, no deviations)
-- Trend: Accelerating, Phase 04 wave 2 complete
+- 04-04 completed in ~4m (2 tasks, no deviations)
+- Trend: Accelerating, Phase 04 wave 3 complete (1 plan remaining)
 
 ## Accumulated Context
 
@@ -89,9 +90,11 @@ Progress: [=================...] 87% (14/16 plans complete)
 - 04-01: Disk usage null fallback in ResourceMonitor -- df may fail on some systems
 - 04-03: Empty catch blocks for headBefore/evalFile -- graceful degradation over hard failure
 - 04-03: Prepend eval context to resume prompts (most actionable info first)
+- 04-04: evaluateSession() is fire-and-forget (non-blocking) in timeout and scan loops
+- 04-04: Duplicate evaluation guard uses timestamp comparison (evaluatedAt > startedAt)
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 04-02-PLAN.md and 04-03-PLAN.md
+Stopped at: Completed 04-04-PLAN.md (Integration Wiring)
 Resume file: None
