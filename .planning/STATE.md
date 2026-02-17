@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 03 of 07 (Foundation Hardening)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-17 -- Roadmap created for v4.0 (Phases 03-07)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-17 -- Completed 03-01-PLAN.md (centralized exec layer)
 
-Progress: [===========...........] 50% (v3.0 complete, v4.0 starting)
+Progress: [============..........] 53% (8/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7 (v3.0)
-- Average duration: N/A (pre-metrics tracking)
+- Total plans completed: 8 (7 v3.0 + 1 v4.0)
+- Average duration: ~2m (03-01 only, pre-metrics for earlier)
 - Total execution time: N/A
 
 **By Phase:**
@@ -29,10 +29,11 @@ Progress: [===========...........] 50% (v3.0 complete, v4.0 starting)
 |-------|-------|-------|----------|
 | 01 | 3 | N/A | N/A |
 | 02 | 4 | N/A | N/A |
+| 03 | 1/4 | ~2m | ~2m |
 
 **Recent Trend:**
-- v3.0 phases completed rapidly (both in one day)
-- Trend: Stable
+- 03-01 completed in ~2m (2 tasks, no deviations)
+- Trend: Fast
 
 ## Accumulated Context
 
@@ -50,7 +51,7 @@ Progress: [===========...........] 50% (v3.0 complete, v4.0 starting)
 
 - Repetitive AI recommendations (dedup not working in observe mode) -- FOUND-06
 - Conversation history lost on restart (in-memory only) -- FOUND-04
-- NL handler uses --dangerously-skip-permissions with no --max-turns -- FOUND-01
+- ~~NL handler uses --dangerously-skip-permissions with no --max-turns -- FOUND-01~~ FIXED in 03-01
 - No test suite -- FOUND-05
 - Only observe mode has been tested in production
 
@@ -58,8 +59,14 @@ Progress: [===========...........] 50% (v3.0 complete, v4.0 starting)
 
 - None
 
+### Decisions (v4.0)
+
+- 03-01: claudeP is synchronous (execSync), semaphore gates entry async -- intentional design
+- 03-01: Direct claudeP (no semaphore) for initial migration; 03-03 adds semaphore to production callers
+- 03-01: session-manager.js --dangerously-skip-permissions left intact (interactive sessions, not claude -p)
+
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Roadmap created for v4.0 milestone
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
