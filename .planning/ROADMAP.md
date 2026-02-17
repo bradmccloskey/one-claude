@@ -36,7 +36,7 @@ Plans:
 
 </details>
 
-### v4.0 Autonomous Agent with External Integrations (In Progress)
+### v4.0 Autonomous Agent with External Integrations (COMPLETE 2026-02-17)
 
 **Milestone Goal:** Transform ONE Claude from an observe-mode project monitor into a truly autonomous agent with session evaluation, external integrations, revenue awareness, service health monitoring, and personal assistant capabilities.
 
@@ -44,7 +44,7 @@ Plans:
 - [x] **Phase 04: Session Intelligence** - Close the feedback loop so the orchestrator knows whether sessions accomplish anything
 - [x] **Phase 05: Infrastructure Monitoring** - Know when Mac Mini services go down and have authority to respond
 - [x] **Phase 06: Revenue & Autonomy** - Revenue awareness, trust-building mechanism, and graduated autonomy promotion
-- [ ] **Phase 07: Personal Assistant** - Reminders, persistent conversation memory, MCP-powered sessions, and cross-session learning
+- [x] **Phase 07: Personal Assistant** - Reminders, persistent conversation memory, MCP-powered sessions, and cross-session learning
 
 ## Phase Details
 
@@ -136,11 +136,15 @@ Plans:
   2. The AI references past conversations and user-declared facts from SQLite-backed conversation history (last 100 exchanges)
   3. Managed Claude Code sessions launched by the orchestrator have MCP server access (GitHub, filesystem) configured via `.mcp.json` or `--allowedTools`
   4. After 50+ session evaluations, the orchestrator identifies which prompt styles and session durations yield the best scores and adjusts future session decisions accordingly
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
+- [x] 07-01-PLAN.md -- Reminder system (SQLite persistence, poll-based firing, NL intent detection, URGENT tier)
+- [x] 07-02-PLAN.md -- SQLite conversation history (migrate from JSON, 100 msg cap, 7-day TTL, keyword search, AI context)
+- [x] 07-03-PLAN.md -- MCP for managed sessions (user-scope MCP verification, --mcp-config option, MCP-aware prompts)
+- [x] 07-04-PLAN.md -- Session learning + tests (SQLite evaluation storage, pattern analysis, prompt classification, 3 test files)
+
+**Status: COMPLETE** (2026-02-17)
 
 ## Progress
 
@@ -155,4 +159,4 @@ Phases execute in numeric order: 03 -> 04 -> 05 -> 06 -> 07
 | 04. Session Intelligence | v4.0 | 5/5 | Complete | 2026-02-17 |
 | 05. Infrastructure Monitoring | v4.0 | 4/4 | Complete | 2026-02-17 |
 | 06. Revenue & Autonomy | v4.0 | 4/4 | Complete | 2026-02-17 |
-| 07. Personal Assistant | v4.0 | 0/TBD | Not started | - |
+| 07. Personal Assistant | v4.0 | 4/4 | Complete | 2026-02-17 |

@@ -32,10 +32,10 @@
 
 ## Personal Assistant
 
-- [ ] **PA-01**: User can set reminders via SMS ("remind me to check YouTube OAuth tomorrow at 10am") that persist to disk and fire at the scheduled time via existing notification system
-- [ ] **PA-02**: Conversation history stored in SQLite (last 100 exchanges) with timestamps, enabling the AI to reference past conversations and user-declared facts
-- [ ] **PA-03**: Managed Claude Code sessions have MCP server access configured (GitHub MCP, filesystem) via `.mcp.json` or `--allowedTools` flags
-- [ ] **PA-04**: Orchestrator tracks which prompt styles, session durations, and project approaches yield best evaluation scores, feeding patterns back into future session decisions (requires 50+ evaluations)
+- [x] **PA-01**: User can set reminders via SMS ("remind me to check YouTube OAuth tomorrow at 10am") that persist to disk and fire at the scheduled time via existing notification system
+- [x] **PA-02**: Conversation history stored in SQLite (last 100 exchanges) with timestamps, enabling the AI to reference past conversations and user-declared facts
+- [x] **PA-03**: Managed Claude Code sessions have MCP server access configured (GitHub MCP, filesystem) via `.mcp.json` or `--allowedTools` flags
+- [x] **PA-04**: Orchestrator tracks which prompt styles, session durations, and project approaches yield best evaluation scores, feeding patterns back into future session decisions (requires 50+ evaluations)
 
 ---
 
@@ -80,7 +80,7 @@
 | REV-03 | 06 | Complete |
 | REV-04 | 06 | Complete |
 | REV-05 | 06 | Complete |
-| PA-01 | 07 | Pending |
-| PA-02 | 07 | Pending |
-| PA-03 | 07 | Pending |
-| PA-04 | 07 | Pending |
+| PA-01 | 07 | Complete |
+| PA-02 | 07 | Complete |
+| PA-03 | 07 | Complete |
+| PA-04 | 07 | Complete |
