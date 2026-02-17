@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 04 of 07 (Session Intelligence)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-17 -- Phase 03 Foundation Hardening verified complete (12/12 must-haves)
+Plan: 1 of 5 in current phase
+Status: In progress
+Last activity: 2026-02-17 -- Completed 04-01-PLAN.md (GitTracker + ResourceMonitor)
 
-Progress: [===============.......] 73% (11/15 plans complete)
+Progress: [===============.....] 75% (12/16 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11 (7 v3.0 + 4 v4.0)
+- Total plans completed: 12 (7 v3.0 + 5 v4.0)
 - Average duration: ~4m (v4.0 plans)
 - Total execution time: N/A
 
@@ -30,13 +30,15 @@ Progress: [===============.......] 73% (11/15 plans complete)
 | 01 | 3 | N/A | N/A |
 | 02 | 4 | N/A | N/A |
 | 03 | 4/4 | ~14m | ~4m |
+| 04 | 1/5 | ~3m | ~3m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
 - 03-02 completed in ~6m (2 tasks, no deviations)
 - 03-03 completed in ~3m (2 tasks, 1 minor deviation)
 - 03-04 completed in ~3m (2 tasks, 1 minor deviation)
-- Trend: Fast, Phase 03 complete
+- 04-01 completed in ~3m (2 tasks, no deviations)
+- Trend: Fast, Phase 04 started
 
 ## Accumulated Context
 
@@ -78,8 +80,14 @@ Progress: [===============.......] 73% (11/15 plans complete)
 - 03-04: Glob pattern test/*.test.js required for Node v25 (bare directory form fails)
 - 03-04: Test semaphore as pure async logic, not via child_process mocking
 
+### Decisions (Phase 04)
+
+- 04-01: GitTracker is stateless (no constructor deps) -- pure query module, callers persist results
+- 04-01: lastIndexOf for pipe-split in commit parsing -- handles commit messages containing `|`
+- 04-01: Disk usage null fallback in ResourceMonitor -- df may fail on some systems
+
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 03 verified complete, ready for Phase 04
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
