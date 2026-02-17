@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** ONE Claude to rule all the Claudes -- central AI brain that autonomously manages all Claude Code sessions across ~19 projects on a Mac Mini.
-**Current focus:** Phase 06 in progress -- Revenue & Autonomy
+**Current focus:** Phase 06 COMPLETE -- Revenue & Autonomy
 
 ## Current Position
 
 Phase: 06 of 07 (Revenue & Autonomy)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-17 -- Completed 06-03-PLAN.md (Context Assembly & Index Wiring)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-17 -- Completed 06-04-PLAN.md (Scheduled Digests + Tests)
 
-Progress: [███████████████████████░] 96% (23/24 plans complete)
+Progress: [████████████████████████] 100% (24/24 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23 (7 v3.0 + 16 v4.0)
+- Total plans completed: 24 (7 v3.0 + 17 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -32,7 +32,7 @@ Progress: [███████████████████████
 | 03 | 4/4 | ~14m | ~4m |
 | 04 | 5/5 | ~12m | ~2.4m |
 | 05 | 4/4 | ~12m | ~3m |
-| 06 | 3/4 | ~8m | ~3m |
+| 06 | 4/4 | ~14m | ~3.5m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -51,7 +51,8 @@ Progress: [███████████████████████
 - 06-01 completed in ~3m (2 tasks, no deviations)
 - 06-02 completed in ~3m (2 tasks, config.json already committed by parallel 06-01)
 - 06-03 completed in ~2m (3 tasks, no deviations)
-- Trend: Phase 06 in progress. 23/24 plans done.
+- 06-04 completed in ~6m (4 tasks, no deviations)
+- Trend: ALL PHASES COMPLETE. 24/24 plans done.
 
 ## Accumulated Context
 
@@ -115,6 +116,8 @@ Progress: [███████████████████████
 - 06-03: Revenue/trust sections placed between health and priorities (natural context flow)
 - 06-03: promotionJob uses inline require('node-cron') (already used by Scheduler)
 - 06-03: scanCount is module-level variable, persists across intervals, resets on restart
+- 06-04: checkPromotion threshold defaults use || fallback (minDaysAtLevel=0 becomes 7)
+- 06-04: Safety test strips comments before checking for setAutonomyLevel in executable code
 
 ### Decisions (Phase 05)
 
@@ -134,5 +137,5 @@ Progress: [███████████████████████
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 06-03-PLAN.md (Context Assembly & Index Wiring)
+Stopped at: Completed 06-04-PLAN.md (Scheduled Digests + Tests) -- Phase 06 COMPLETE, ALL PLANS DONE
 Resume file: None
