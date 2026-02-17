@@ -14,6 +14,7 @@ const ContextAssembler = require("./lib/context-assembler");
 const AIBrain = require("./lib/ai-brain");
 const DecisionExecutor = require("./lib/decision-executor");
 const NotificationManager = require("./lib/notification-manager");
+const ConversationStore = require("./lib/conversation-store");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -64,6 +65,8 @@ const aiBrain = new AIBrain({
   config: CONFIG,
 });
 
+const conversationStore = new ConversationStore();
+
 const commands = new CommandRouter({
   scanner,
   processMonitor,
@@ -76,6 +79,7 @@ const commands = new CommandRouter({
   aiBrain,
   decisionExecutor,
   messenger,
+  conversationStore,
 });
 
 // ── Utility ─────────────────────────────────────────────────────────────────
