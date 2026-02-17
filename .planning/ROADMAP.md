@@ -43,7 +43,7 @@ Plans:
 - [x] **Phase 03: Foundation Hardening** - Fix pre-existing risks and lay infrastructure all v4.0 features depend on
 - [x] **Phase 04: Session Intelligence** - Close the feedback loop so the orchestrator knows whether sessions accomplish anything
 - [x] **Phase 05: Infrastructure Monitoring** - Know when Mac Mini services go down and have authority to respond
-- [ ] **Phase 06: Revenue & Autonomy** - Revenue awareness, trust-building mechanism, and graduated autonomy promotion
+- [x] **Phase 06: Revenue & Autonomy** - Revenue awareness, trust-building mechanism, and graduated autonomy promotion
 - [ ] **Phase 07: Personal Assistant** - Reminders, persistent conversation memory, MCP-powered sessions, and cross-session learning
 
 ## Phase Details
@@ -120,10 +120,12 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 06-01-PLAN.md -- Revenue Tracker + SQLite foundation (XMR mining API, MLX health endpoint, NULL vs zero, data age)
+- [x] 06-01-PLAN.md -- Revenue Tracker + SQLite foundation (XMR mining API, MLX health endpoint, NULL vs zero, data age)
 - [x] 06-02-PLAN.md -- Trust Tracker + promotion recommendations (trust_summary table, metric accumulation, threshold checking)
-- [ ] 06-03-PLAN.md -- Context assembly + index.js wiring (revenue/trust in AI context, scan loop integration, shutdown)
-- [ ] 06-04-PLAN.md -- Scheduled digests + tests (evening 9:45 PM digest, Sunday 7 AM revenue summary, integration tests)
+- [x] 06-03-PLAN.md -- Context assembly + index.js wiring (revenue/trust in AI context, scan loop integration, shutdown)
+- [x] 06-04-PLAN.md -- Scheduled digests + tests (evening 9:45 PM digest, Sunday 7 AM revenue summary, integration tests)
+
+**Status: COMPLETE** (2026-02-17)
 
 ### Phase 07: Personal Assistant
 **Goal**: The orchestrator becomes a personal assistant that remembers conversations, sets reminders, equips sessions with external tools, and learns from experience
@@ -152,5 +154,5 @@ Phases execute in numeric order: 03 -> 04 -> 05 -> 06 -> 07
 | 03. Foundation Hardening | v4.0 | 4/4 | Complete | 2026-02-17 |
 | 04. Session Intelligence | v4.0 | 5/5 | Complete | 2026-02-17 |
 | 05. Infrastructure Monitoring | v4.0 | 4/4 | Complete | 2026-02-17 |
-| 06. Revenue & Autonomy | v4.0 | 2/4 | In Progress | - |
+| 06. Revenue & Autonomy | v4.0 | 4/4 | Complete | 2026-02-17 |
 | 07. Personal Assistant | v4.0 | 0/TBD | Not started | - |

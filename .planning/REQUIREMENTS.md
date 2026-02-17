@@ -24,11 +24,11 @@
 
 ## Revenue & Autonomy
 
-- [ ] **REV-01**: Revenue tracker collects earnings data from local sources (XMR mining API, MLX access logs) and stores snapshots in SQLite with NULL vs zero distinction and data age tracking
-- [ ] **REV-02**: Trust metrics track per-autonomy-level stats (sessions launched, avg evaluation score, false alert rate, days at level) for graduated autonomy promotion decisions
-- [ ] **REV-03**: Orchestrator recommends autonomy level promotions via SMS when trust metrics cross thresholds (e.g., 30+ sessions at cautious with avg score >= 3.5) — never self-promotes, always asks user
-- [ ] **REV-04**: Weekly revenue summary SMS sent Sunday mornings with per-source breakdown and week-over-week trends
-- [ ] **REV-05**: Evening wind-down digest sent at 9:45 PM with day's session accomplishments, commits across projects, and tomorrow's AI plan
+- [x] **REV-01**: Revenue tracker collects earnings data from local sources (XMR mining API, MLX access logs) and stores snapshots in SQLite with NULL vs zero distinction and data age tracking
+- [x] **REV-02**: Trust metrics track per-autonomy-level stats (sessions launched, avg evaluation score, false alert rate, days at level) for graduated autonomy promotion decisions
+- [x] **REV-03**: Orchestrator recommends autonomy level promotions via SMS when trust metrics cross thresholds (e.g., 30+ sessions at cautious with avg score >= 3.5) — never self-promotes, always asks user
+- [x] **REV-04**: Weekly revenue summary SMS sent Sunday mornings with per-source breakdown and week-over-week trends
+- [x] **REV-05**: Evening wind-down digest sent at 9:45 PM with day's session accomplishments, commits across projects, and tomorrow's AI plan
 
 ## Personal Assistant
 
@@ -75,11 +75,11 @@
 | INFRA-01 | 05 | Complete |
 | INFRA-02 | 05 | Complete |
 | INFRA-03 | 05 | Complete |
-| REV-01 | 06 | Pending |
-| REV-02 | 06 | Pending |
-| REV-03 | 06 | Pending |
-| REV-04 | 06 | Pending |
-| REV-05 | 06 | Pending |
+| REV-01 | 06 | Complete |
+| REV-02 | 06 | Complete |
+| REV-03 | 06 | Complete |
+| REV-04 | 06 | Complete |
+| REV-05 | 06 | Complete |
 | PA-01 | 07 | Pending |
 | PA-02 | 07 | Pending |
 | PA-03 | 07 | Pending |
