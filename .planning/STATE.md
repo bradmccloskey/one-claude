@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 06 of 07 (Revenue & Autonomy)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 06-02-PLAN.md (Trust Tracker & Promotion Recommendations)
+Last activity: 2026-02-17 -- Completed 06-03-PLAN.md (Context Assembly & Index Wiring)
 
-Progress: [██████████████████████░░] 92% (22/24 plans complete)
+Progress: [███████████████████████░] 96% (23/24 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22 (7 v3.0 + 15 v4.0)
+- Total plans completed: 23 (7 v3.0 + 16 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -32,7 +32,7 @@ Progress: [██████████████████████░
 | 03 | 4/4 | ~14m | ~4m |
 | 04 | 5/5 | ~12m | ~2.4m |
 | 05 | 4/4 | ~12m | ~3m |
-| 06 | 2/4 | ~6m | ~3m |
+| 06 | 3/4 | ~8m | ~3m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -50,7 +50,8 @@ Progress: [██████████████████████░
 - 05-04 completed in ~5m (2 tasks, 1 deviation: module cache clearing for execSync)
 - 06-01 completed in ~3m (2 tasks, no deviations)
 - 06-02 completed in ~3m (2 tasks, config.json already committed by parallel 06-01)
-- Trend: Phase 06 in progress. 22/24 plans done.
+- 06-03 completed in ~2m (3 tasks, no deviations)
+- Trend: Phase 06 in progress. 23/24 plans done.
 
 ## Accumulated Context
 
@@ -111,6 +112,9 @@ Progress: [██████████████████████░
 - 06-02: observe->cautious never automated (policy decision, human-only)
 - 06-02: checkPromotion() returns recommendation string, never calls setAutonomyLevel()
 - 06-02: _promotionSent flag prevents duplicate SMS at same level (resets on level change)
+- 06-03: Revenue/trust sections placed between health and priorities (natural context flow)
+- 06-03: promotionJob uses inline require('node-cron') (already used by Scheduler)
+- 06-03: scanCount is module-level variable, persists across intervals, resets on restart
 
 ### Decisions (Phase 05)
 
@@ -130,5 +134,5 @@ Progress: [██████████████████████░
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 06-02-PLAN.md (Trust Tracker & Promotion Recommendations)
+Stopped at: Completed 06-03-PLAN.md (Context Assembly & Index Wiring)
 Resume file: None
