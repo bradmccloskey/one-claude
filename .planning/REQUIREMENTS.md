@@ -60,27 +60,27 @@
 
 ## Traceability
 
-| Requirement | Phase |
-|-------------|-------|
-| FOUND-01 | 03 |
-| FOUND-02 | 03 |
-| FOUND-03 | 03 |
-| FOUND-04 | 03 |
-| FOUND-05 | 03 |
-| FOUND-06 | 03 |
-| SESS-01 | 04 |
-| SESS-02 | 04 |
-| SESS-03 | 04 |
-| SESS-04 | 04 |
-| INFRA-01 | 05 |
-| INFRA-02 | 05 |
-| INFRA-03 | 05 |
-| REV-01 | 06 |
-| REV-02 | 06 |
-| REV-03 | 06 |
-| REV-04 | 06 |
-| REV-05 | 06 |
-| PA-01 | 07 |
-| PA-02 | 07 |
-| PA-03 | 07 |
-| PA-04 | 07 |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| FOUND-01 | 03 | Pending |
+| FOUND-02 | 03 | Pending |
+| FOUND-03 | 03 | Pending |
+| FOUND-04 | 03 | Pending |
+| FOUND-05 | 03 | Pending |
+| FOUND-06 | 03 | Pending |
+| SESS-01 | 04 | Pending |
+| SESS-02 | 04 | Pending |
+| SESS-03 | 04 | Pending |
+| SESS-04 | 04 | Pending |
+| INFRA-01 | 05 | Pending |
+| INFRA-02 | 05 | Pending |
+| INFRA-03 | 05 | Pending |
+| REV-01 | 06 | Pending |
+| REV-02 | 06 | Pending |
+| REV-03 | 06 | Pending |
+| REV-04 | 06 | Pending |
+| REV-05 | 06 | Pending |
+| PA-01 | 07 | Pending |
+| PA-02 | 07 | Pending |
+| PA-03 | 07 | Pending |
+| PA-04 | 07 | Pending |
