@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** ONE Claude to rule all the Claudes -- central AI brain that autonomously manages all Claude Code sessions across ~19 projects on a Mac Mini.
-**Current focus:** Phase 04 complete -- ready for Phase 05
+**Current focus:** Phase 05 in progress -- Health Monitor foundation complete
 
 ## Current Position
 
-Phase: 04 of 07 (Session Intelligence) -- COMPLETE
-Plan: 5 of 5 in current phase (all complete)
-Status: Phase complete
-Last activity: 2026-02-17 -- Completed 04-05-PLAN.md (Test Coverage)
+Phase: 05 of 07 (Infrastructure Monitoring) -- IN PROGRESS
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-17 -- Completed 05-01-PLAN.md (Health Monitor Foundation)
 
-Progress: [====================] 100% (16/16 plans complete)
+Progress: [=================---] 85% (17/20 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16 (7 v3.0 + 9 v4.0)
+- Total plans completed: 17 (7 v3.0 + 10 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -31,6 +31,7 @@ Progress: [====================] 100% (16/16 plans complete)
 | 02 | 4 | N/A | N/A |
 | 03 | 4/4 | ~14m | ~4m |
 | 04 | 5/5 | ~12m | ~2.4m |
+| 05 | 1/4 | ~2m | ~2m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -42,7 +43,8 @@ Progress: [====================] 100% (16/16 plans complete)
 - 04-03 completed in ~1m (2 tasks, no deviations)
 - 04-04 completed in ~4m (2 tasks, no deviations)
 - 04-05 completed in ~2m (2 tasks, no deviations)
-- Trend: Phase 04 complete. All phases 01-04 done (16/16 plans)
+- 05-01 completed in ~2m (3 tasks, no deviations)
+- Trend: Phase 05 started. 17/20 plans complete
 
 ## Accumulated Context
 
@@ -95,8 +97,15 @@ Progress: [====================] 100% (16/16 plans complete)
 - 04-04: Duplicate evaluation guard uses timestamp comparison (evaluatedAt > startedAt)
 - 04-05: Module cache patching for mocking exec.claudePWithSemaphore in tests (restored in afterEach)
 
+### Decisions (Phase 05)
+
+- 05-01: HTTP/TCP checks parallel via Promise.allSettled; process/docker sequential (execSync blocks)
+- 05-01: Any HTTP response (including 4xx/5xx) = UP; only connection/DNS/timeout = DOWN
+- 05-01: formatForContext() returns null (not empty string) when no results exist
+- 05-01: healthMonitor is optional dependency in ContextAssembler (null check, backward compatible)
+
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 04-05-PLAN.md (Test Coverage) -- Phase 04 complete
-Resume file: None
+Stopped at: Completed 05-01-PLAN.md (Health Monitor Foundation)
+Resume file: .planning/phases/05-infrastructure-monitoring/05-02-PLAN.md
