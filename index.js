@@ -399,7 +399,9 @@ function startThinkCycle() {
               evaluated,
               decision.summary
             );
-            notificationManager.notify(sms, 3); // tier 3 = summary
+            if (sms) {
+              notificationManager.notify(sms, 3); // tier 3 = summary
+            }
           } else {
             // Active mode: execute validated recommendations
             for (const rec of evaluated) {
