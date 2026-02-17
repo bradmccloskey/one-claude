@@ -59,11 +59,13 @@ Plans:
   4. Restarting the daemon preserves conversation history, and messages older than 24h are automatically pruned
   5. Running `node --test` executes integration tests that verify core orchestrator behavior (think cycle, SMS routing, session lifecycle)
   6. The AI does not send the same recommendation SMS twice in observe mode (content-based dedup, not just timer-based)
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md -- Centralized exec wrapper with semaphore + NL handler safety fix
+- [ ] 03-02-PLAN.md -- Conversation persistence + recommendation dedup
+- [ ] 03-03-PLAN.md -- Structured JSON output via --json-schema + semaphore wiring
+- [ ] 03-04-PLAN.md -- Test infrastructure + integration tests
 
 ### Phase 04: Session Intelligence
 **Goal**: The orchestrator knows what each session accomplished, how the system is performing, and uses that knowledge to write better session prompts
@@ -134,7 +136,7 @@ Phases execute in numeric order: 03 -> 04 -> 05 -> 06 -> 07
 |-------|-----------|----------------|--------|-----------|
 | 01. AI Brain Foundation | v3.0 | 3/3 | Complete | 2026-02-16 |
 | 02. Autonomous Execution | v3.0 | 4/4 | Complete | 2026-02-16 |
-| 03. Foundation Hardening | v4.0 | 0/TBD | Not started | - |
+| 03. Foundation Hardening | v4.0 | 0/4 | Planned | - |
 | 04. Session Intelligence | v4.0 | 0/TBD | Not started | - |
 | 05. Infrastructure Monitoring | v4.0 | 0/TBD | Not started | - |
 | 06. Revenue & Autonomy | v4.0 | 0/TBD | Not started | - |
