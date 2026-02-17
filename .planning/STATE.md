@@ -19,7 +19,7 @@ Progress: [===============.......] 73% (11/15 plans complete)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10 (7 v3.0 + 3 v4.0)
+- Total plans completed: 11 (7 v3.0 + 4 v4.0)
 - Average duration: ~4m (v4.0 plans)
 - Total execution time: N/A
 
@@ -29,13 +29,14 @@ Progress: [===============.......] 73% (11/15 plans complete)
 |-------|-------|-------|----------|
 | 01 | 3 | N/A | N/A |
 | 02 | 4 | N/A | N/A |
-| 03 | 3/4 | ~11m | ~4m |
+| 03 | 4/4 | ~14m | ~4m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
 - 03-02 completed in ~6m (2 tasks, no deviations)
 - 03-03 completed in ~3m (2 tasks, 1 minor deviation)
-- Trend: Fast
+- 03-04 completed in ~3m (2 tasks, 1 minor deviation)
+- Trend: Fast, Phase 03 complete
 
 ## Accumulated Context
 
@@ -55,7 +56,7 @@ Progress: [===============.......] 73% (11/15 plans complete)
 - ~~Conversation history lost on restart (in-memory only) -- FOUND-04~~ FIXED in 03-02
 - ~~NL handler uses --dangerously-skip-permissions with no --max-turns -- FOUND-01~~ FIXED in 03-01
 - ~~Fragile 3-stage JSON parser in AI brain -- FOUND-03~~ FIXED in 03-03
-- No test suite -- FOUND-05
+- ~~No test suite -- FOUND-05~~ FIXED in 03-04
 - Only observe mode has been tested in production
 
 ### Blockers
@@ -73,9 +74,12 @@ Progress: [===============.......] 73% (11/15 plans complete)
 - 03-02: formatForSMS returns null when all recommendations deduped
 - 03-03: Keep JSON.parse safety-net despite --json-schema (defense in depth, zero cost)
 - 03-03: _handleContextual() NL call is dead code -- not touched
+- 03-04: node:test built-in runner (no Jest/Mocha -- zero dependency constraint)
+- 03-04: Glob pattern test/*.test.js required for Node v25 (bare directory form fails)
+- 03-04: Test semaphore as pure async logic, not via child_process mocking
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 03-03-PLAN.md
+Stopped at: Completed 03-04-PLAN.md (Phase 03 complete)
 Resume file: None
