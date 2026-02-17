@@ -1,239 +1,287 @@
-# Research Summary: v3.0 AI Decision Engine
+# Research Summary: ONE Claude v4.0 — Autonomous Agent with External Integrations
 
-**Project:** project-orchestrator v3.0
-**Research Date:** 2026-02-15
-**Updated:** 2026-02-16 — Revised to use `claude -p` (Max plan) instead of Anthropic SDK
-**Confidence:** HIGH
+**Project:** project-orchestrator v4.0
+**Research Date:** 2026-02-16
+**Confidence:** HIGH (all 4 dimensions verified against codebase, official docs, and live CLI testing)
 
 ---
 
 ## Executive Summary
 
-The v3.0 milestone adds an AI decision engine on top of the existing v2.0 orchestrator, transforming it from a human-controlled process manager into an autonomous agent that decides what to work on. The key insight from the revised approach: **the user has a Claude Max plan with unlimited Claude Code usage, so there is no reason to integrate the Anthropic API directly.**
+v4.0 is a depth milestone, not a breadth milestone. v3.0 is a working autonomous orchestrator that manages ~19 projects across a Mac Mini, communicates via iMessage, and runs 5 concurrent Claude Code sessions. What it cannot do: know whether those sessions accomplished anything (no evaluation), know when services go down (no health monitoring), understand which projects generate revenue (no revenue intelligence), or earn its way to higher autonomy levels through demonstrated competence (no trust-building mechanism). v4.0 closes all four gaps.
 
-Instead of adding SDK dependencies, API key management, cost tracking, model routing, and prompt caching logic, the AI brain simply shells out to `claude -p` (Claude Code's print mode). This eliminates the entire cost infrastructure layer and cuts the v3.0 scope roughly in half.
+The research converges on a clear implementation philosophy: extend the existing hub-and-spoke architecture with new data-gathering modules (session evaluator, health monitor, revenue tracker) that feed enriched context into the existing AI brain, and new action types in the existing decision executor. Zero architectural rewrites. Zero new npm dependencies — Node.js v25.6.1 provides native `fetch`, `fs.watch`, `node:test`, and `EventEmitter`; `claude -p` v2.1.39 provides `--json-schema`, `--allowedTools`, and `--model` routing without any SDK. The 2-dependency footprint (`better-sqlite3`, `node-cron`) is preserved.
 
-The recommended approach is:
-- **`claude -p`** for all AI reasoning (zero cost, zero dependencies)
-- **Sonnet as default model** (no reason to penny-pinch on Haiku when it's free)
-- **5-minute think cycle** separate from the existing 60-second scan
-- **JSON-in-prompt** for structured decisions (validated with allowlist)
-- **Safety-first rollout**: observe mode first, then cautious autonomy
+The most important cross-cutting finding: **MCP tools ARE available inside `claude -p` print mode** (fixed in Claude Code v0.2.54, current version is 2.1.39). The orchestrator already has 11 MCP servers configured globally (GitHub, Docker, Calendar, Apple Reminders, Memory, etc.). Every `claude -p` call inherits these servers. The entire external integration layer — GitHub PR checking, calendar awareness, Docker management — comes for free via `--allowedTools`, with no new code beyond crafting prompts and setting `--max-turns 3-5`.
 
-Critical risks now center on **runaway automation** (AI starting too many sessions), **stale state decisions** (acting on outdated information), and **hallucinated project understanding** (AI misreading what a project needs). Cost explosion — the previous #1 risk — is eliminated by the Max plan.
+The critical path runs through the feedback loop: **Git Progress Tracking (T2) → Session Evaluation (T1) → Graduated Autonomy (T5)**. Without knowing if sessions accomplish anything, no other v4.0 feature produces reliable results. Revenue intelligence ranks second because "prioritize revenue projects" is meaningless without revenue data.
 
 ---
 
 ## Key Findings
 
-### From STACK.md: Technology Decisions
+### From STACK.md: Zero New Dependencies
 
-**Core Decision: Use `claude -p`, NOT the Anthropic SDK**
+**Headline:** v4.0 adds substantial capability with `package.json` identical to v3.0.
 
-The user's Claude Max plan ($200/mo flat) includes unlimited Claude Code usage. Every `claude -p` call is covered. Adding `@anthropic-ai/sdk` would mean paying per-token on top of the Max subscription — paying twice for the same capability.
+- `--json-schema` flag on `claude -p` provides **guaranteed structured output** via constrained decoding. Replaces the fragile 3-strategy `parseJSON()` function in `ai-brain.js`. Output is physically prevented from violating the schema — not "asking nicely for JSON."
+- `--allowedTools "mcp__github__list_pull_requests"` bridges Node.js to the 11 already-configured MCP servers. No `@modelcontextprotocol/sdk`, no transport management.
+- `--model haiku/sonnet/opus` enables model routing without any routing library. Use Haiku for SMS composition, Sonnet for default reasoning, Opus when >3 projects need attention simultaneously.
+- Native `fetch` (Node v25.6.1, undici-powered) handles all HTTP health checks. No `axios`, no `node-fetch`.
+- `fs.watch` with `{recursive: false}` on `.orchestrator/` signal directories handles event-driven session signals. Debounce at 1 second. Keep polling for everything else (macOS `fs.watch` has known reliability issues at scale — see PITFALLS).
+- `better-sqlite3` (already installed) extends to conversation persistence and revenue snapshots. `node:sqlite` is still experimental; skip it.
+- `tmux capture-pane -p -S -100` works on detached sessions — verified. Git diff + tmux output is the raw material for session evaluation.
 
-**Stack Additions: ZERO**
-- No `@anthropic-ai/sdk` — use `claude -p` via `child_process`
-- No `dotenv` — no API key to manage
-- No new npm packages at all
+**Verdict:** Net new npm packages: ZERO. This is a constraint to preserve.
 
-**Model Strategy:**
-- **Default: Sonnet 4.5** via `claude -p --model sonnet` — best quality-to-speed ratio, free with Max
-- **Complex: Opus 4.6** via `claude -p` (default model) — for weekly planning, complex evaluations
-- **Simple: Haiku 4.5** via `claude -p --model haiku` — for trivial formatting tasks
+### From FEATURES.md: Feature Dependency Map
 
-With Max plan, there's no cost incentive to use Haiku. Default to Sonnet for better reasoning.
+**Table Stakes (non-negotiable for v4.0 to have substance):**
 
-**Cost: $0 incremental**
-- No API billing
-- No budget caps needed
-- No cost tracking needed
-- No prompt caching logic needed
+| ID | Feature | Rationale |
+|----|---------|-----------|
+| T2 | Git Progress Tracking | Ground truth. The only objective measure of "did something happen." |
+| T1 | Session Output Evaluation | Closes the feedback loop. LLM-as-judge with git diff + tmux output. |
+| T3 | Service Health Monitoring | The Mac Mini IS the infrastructure. Down = orchestrator failed its job. |
+| T4 | Revenue Intelligence | "Prioritize revenue" is meaningless without numbers. Start with XMR + MLX. |
+| T5 | Graduated Autonomy + Trust Building | Path from permanent observe-mode to earned autonomous operation. |
 
-### From FEATURES.md: Feature Categories
+**High-value differentiators (build order: D1, D3, D5, D7 first; D2, D4, D8, D9 second; D6 last):**
 
-**7 Table Stakes (non-negotiable):**
-1. Claude CLI Integration — `claude -p` as the AI interface (replaces "API Integration")
-2. Project State Comprehension — semantic understanding of STATE.md + signals
-3. Priority Scoring Engine — weighted algorithm across 5-6 dimensions
-4. Autonomous Session Launch — proactive "what to work on next" execution
-5. Session Completion Evaluation — LLM-as-judge for session output quality
-6. Intelligent SMS Summaries — synthesized updates, not raw data dumps
-7. Decision Logging — every AI decision with context for debugging and trust
+- D1 (Personal Assistant via SMS) — natural language routing already exists; extend with reminders, calendar, notes
+- D3 (Session Continuation Intelligence) — "last session scored 3/5, completed X, remaining Y" replaces generic resume prompts
+- D5 (Proactive Service Recovery) — launchctl/docker restart gated by autonomy level
+- D7 (System Resource Dashboard) — low complexity, improves every AI decision
+- D6 (Cross-Session Learning) — needs 50+ evaluations; build last, after data accumulates
 
-**Removed from Table Stakes:** Cost Tracking and Budget Controls (T7 from original). Not needed with Max plan.
+**Anti-features (deliberately skip):** Web dashboard for health (SMS works), official revenue APIs before scraping is proven stable, MCP server AS the orchestrator, per-project autonomy levels, automated financial projections.
 
-**9 Differentiators (high-value enhancements):** Unchanged from original research.
+**Critical dependency chain:**
+```
+T2 (Git Tracking) -> T1 (Evaluation) -> T5 (Graduated Autonomy) -> D6 (Learning)
+T3 (Health Monitor) -> T4 (Revenue) -> D4 (Weekly Report)
+v3.0 NL SMS -> D1 (Personal Assistant) -> D8 (Conversation Memory)
+```
 
-**10 Anti-Features (deliberately avoided):** Unchanged. Additionally reinforced:
-- Multi-model routing logic — even simpler now, just pass `--model` flag
-- Cost dashboards — nothing to track
+### From ARCHITECTURE.md: Additive Extension, Not Restructure
 
-### From ARCHITECTURE.md: Component Design
+**The rule:** Do NOT restructure the existing hub-and-spoke model. Add new modules, extend existing ones.
 
-**New Modules (3 total, down from 4):**
+**New modules (4):**
 
-1. **AI Brain** (`lib/ai-brain.js`) — orchestrates think cycle, calls `claude -p`, logs decisions
-2. **Context Assembler** (`lib/context-assembler.js`) — gathers project states into compact prompt
-3. **Decision Executor** (`lib/decision-executor.js`) — parses structured AI output, executes actions
+| Module | File | Purpose | Phase |
+|--------|------|---------|-------|
+| Session Evaluator | `lib/session-evaluator.js` | tmux capture + git diff, quick assessment | Early |
+| Health Monitor | `lib/health-monitor.js` | HTTP pings, Docker status, alerting | Early |
+| Revenue Tracker | `lib/revenue-tracker.js` | Revenue-data.json + income-dashboard DB | Mid |
+| Event Bus | `lib/event-bus.js` | Internal EventEmitter for module decoupling | Early |
 
-**Removed:** Cost Tracker (`lib/cost-tracker.js`) — not needed with Max plan.
+**Modified modules (6):** `context-assembler.js` (add eval/health/revenue sections), `decision-executor.js` (add evaluate_session, check_health, query_mcp actions), `ai-brain.js` (model routing + MCP bridge), `state.js` (health history + conversation persistence), `config.json`, `index.js` (health check interval).
 
-**Modified Modules:**
-- `index.js` — add 5-minute `aiThinkCycle()` interval
-- `commands.js` — add AI control commands (on/off/status/level)
-- `state.js` — extend with `aiDecisionHistory` tracking
-- `config.json` — add `ai` section (model, interval, enabled)
+**Unchanged modules (6):** messenger, scanner, signal-protocol, process-monitor, scheduler, digest.
 
-**Think Cycle Timing:**
-- 5-minute interval (default) — allows sessions to produce meaningful output
-- Separate from existing 60s scan (which still handles urgent alerts)
-- `claude -p` takes ~2-5 seconds per call — well within the 5-minute window
-- Each call is a fresh conversation (no growing message history)
+**Architecture decision: Hybrid MCP approach**
+- HIGH-frequency, SIMPLE ops → direct Node.js (health pings, Docker status, revenue file reads)
+- LOW-frequency, COMPLEX ops → `claude -p` with `--allowedTools` (GitHub PR analysis, calendar queries, Reminders creation)
+- Never spawn parallel `claude -p` processes — use a global semaphore (max 2 concurrent)
 
-### From PITFALLS.md: Revised Risk Assessment
+**Key constraint: Anti-pattern 4 is law.** Never run multiple `claude -p` calls concurrently. Each consumes 200-500 MB RAM on a 16 GB Mac Mini already running Claude Code sessions. Queue all AI calls through a serialized pipeline.
 
-**Eliminated Risks (Max plan removes these):**
-- ~~API Cost Explosion~~ — unlimited usage, $0 incremental cost
-- ~~Rate Limits / 429 Errors~~ — no API rate limits with Claude Code CLI
-- ~~Token Context Bloat cost impact~~ — still affects quality/latency but not billing
+**Build order (dependency-aware):**
+1. Event Bus, Session Evaluator, Health Monitor, Conversation Persistence (no cross-dependencies)
+2. Context Assembler Extensions, Revenue Tracker (depend on Tier 1)
+3. Multi-Model Routing, MCP Bridge, Decision Executor Extensions (depend on Tier 2)
+4. Graduated Autonomy rollout (depends on Tier 3 being stable)
 
-**Remaining Critical Risks (3):**
+### From PITFALLS.md: Top Risks with Mitigations
 
-1. **Runaway Automation** (CRITICAL) — AI starts/stops sessions inappropriately, crashes Mac Mini
-   - Mitigation: Action allowlist, cooldown timers, resource checks (2GB free RAM), protected sessions
+**Critical (system-threatening, must address before the feature ships):**
 
-2. **Stale State Decisions** (HIGH) — AI acts on outdated information, duplicate sessions
-   - Mitigation: Atomic state snapshots, optimistic locking, 30s decision expiry, debounce changes
+1. **MCP Cascade Failure** — One hung MCP server stalls the entire think cycle. `execSync` blocks on MCP timeouts (documented as unreliable in Claude Code issues #3033, #20335). Mitigation: circuit breaker per MCP server (3 consecutive failures = 5-minute disable + exponential backoff), pre-think health check, only use MCP bridge for low-frequency complex tasks.
 
-3. **Hallucinated Understanding** (HIGH) — AI misreads project needs, wastes sessions
-   - Mitigation: Explicit blocker enforcement, user priority overrides file, confidence scoring
+2. **Graduated Autonomy Without Rollback** — AI takes a destructive action at moderate level, no undo exists. Mitigation: staged promotion (cannot skip levels), automatic demotion on failure, action undo registry (every action records its inverse), pre-action "hot check" (is the target actively processing?), 15-minute rate limit between destructive actions on same project.
 
-**Remaining Moderate Risks (3):**
-- Structured output parsing failures — use robust JSON extraction + validation
-- Notification spam — tier system, daily SMS budget
-- Main loop blocking — async `claude -p` calls, timeout enforcement
+3. **Session Evaluation False Confidence** — LLM judges favor AI-generated output; sessions scoring "good" while broken. Mitigation: objective signals are primary (tests pass, commits made, signal file present), LLM judgment is supplementary only. Bias rubric toward "inconclusive" rather than "success." Track calibration accuracy against user feedback.
+
+**High (significant degradation, address before or alongside the feature):**
+
+4. **External Services Breaking the Main Loop** — GitHub rate limits (30 req/min search, 5K/hr REST), Docker socket hangs, new dependencies. Mitigation: ServiceDataCache pattern — refresh on its own interval, main loop reads from cache only. Use `gh` CLI and `docker` CLI via `execFile` with 10-second timeouts. Zero new npm dependencies.
+
+5. **Health Monitor Alert Storms** — Cloudflare tunnel reconnect causes all services to fail simultaneously, orchestrator attempts cascading restarts. Mitigation: correlated failure detection (3+ simultaneous = infrastructure issue, not service issue), 3 consecutive failures before alert, localhost-first health checks, 2 service restarts per hour max.
+
+6. **Revenue Data Producing Wrong Priorities** — Stale or missing data treated as zero revenue, deprioritizing earning projects. Mitigation: NULL vs zero distinction in data model, always show data age in AI context, manual override via `priorities.json`, do not connect revenue to priority scoring until 2+ weeks of stable data.
+
+7. **`--dangerously-skip-permissions` in NL Handler** — Pre-existing risk that v4.0 amplifies. Current NL handler (commands.js:643) has no `--max-turns` and `--dangerously-skip-permissions`. Mitigation: add `--max-turns 1`, remove skip-permissions from NL handler, split into read-only path and write path through DecisionExecutor.
+
+**Moderate (address in the relevant phase):**
+
+8. Notification overload from multiple new sources — content-type budget allocation (health: 3/day, revenue: 2/day, reminders: 2/day, critical: unlimited)
+9. `fs.watch` event storms on macOS — stick with polling; use content hashing for optimization if needed
+10. Conversation persistence state size and credential leakage — separate `.conversation-history.json`, TTL 24h, sensitive data filtering, cap at 20 messages
+11. Test suite reveals tight coupling — use existing dependency injection, `lib/exec.js` wrapper for `execSync` mocking, temp directories for state
+12. Process accumulation from expanded `claude -p` call sites — global `ClaudeSemaphore` class (max 2 concurrent, SMS preempts background tasks)
 
 ---
 
 ## Implications for Roadmap
 
-### Simplified Phase Structure (2 phases instead of 3)
+### Recommended Phase Structure (4 Phases)
 
-With cost infrastructure removed, the build is simpler and can be condensed.
+The ordering follows two principles: (1) close feedback loops before adding intelligence that depends on them, and (2) build ground truth before building analysis on top of it.
 
-#### Phase 1: Foundation and Safety (OBSERVE MODE)
+---
 
-**Goal:** Get AI integration working in observe-only mode with guardrails.
+#### Phase 1: Foundation Hardening
 
-**What to Build:**
-- `claude -p` integration via `child_process`
-- Context Assembler (compact state representation)
-- AI Brain in `autonomyLevel: "observe"` mode (thinks but doesn't act)
-- Decision Logging (every decision with full context)
-- Guardrails: action allowlist, cooldown timers, resource checks
-- SMS commands: `ai on/off`, `ai status`, `ai level`
-- Priority overrides file (`priorities.json`)
+**Goal:** Fix pre-existing risks that v4.0 amplifies, and lay the infrastructure all v4.0 features depend on.
 
-**What to Deliver:**
-AI that makes recommendations via SMS ("I think we should work on X next. Go?") but does NOT execute autonomously. User can inspect decision quality before enabling execution.
+**What to build:**
+- `lib/exec.js` wrapper for `execSync`/`execFile` (enables testing + future mocking)
+- `lib/event-bus.js` (internal EventEmitter, wired into index.js)
+- Global `ClaudeSemaphore` (max 2 concurrent `claude -p` processes)
+- Conversation persistence: `.conversation-history.json` with TTL, size cap, credential filtering
+- Fix NL handler: add `--max-turns 1`, remove `--dangerously-skip-permissions`
+- State file splitting: `.state.json`, `.state-health.json`, `.state-revenue.json`, `.conversation-history.json`
+- Test infrastructure: `lib/exec.js` mock pattern, temp dir helpers, first integration tests
+- `--json-schema` on all `claude -p` calls (replaces fragile `parseJSON()`)
 
-**Success Criteria:**
-- AI recommends sensible priorities when prompted
-- Decision log captures all reasoning
-- `claude -p` calls complete within 30 seconds
-- SMS notifications are clear and actionable
-- No new npm dependencies added
+**Pitfalls to address:** #7 (NL handler), #12 (process accumulation), #11 (test infrastructure), #10 (conversation persistence)
 
-#### Phase 2: Autonomous Execution and Intelligence
+**Research flag:** SKIP — patterns are well-documented and verified. No phase research needed.
 
-**Goal:** Allow AI to act autonomously with full intelligence features.
+---
 
-**What to Build:**
-- Decision Executor with action allowlist
-- Atomic state snapshots and optimistic locking
-- Upgrade to `autonomyLevel: "cautious"` then `"moderate"`
-- Session Prompt Engineering (context-rich prompts per project)
-- Smart Error Recovery
-- Proactive Staleness Detection
-- Intelligent Morning Digest (AI-written, not template)
-- Time Boxing (45-min max per session)
-- Notification tier system
+#### Phase 2: Feedback Loop (Session Evaluation)
 
-**What to Deliver:**
-AI that autonomously starts sessions, evaluates progress, recovers from errors, and only interrupts the human for genuine decisions.
+**Goal:** Close the feedback loop. The orchestrator must know whether sessions accomplish anything before making smarter decisions about them.
 
-**Success Criteria:**
-- AI successfully launches sessions for genuinely high-priority work
-- No duplicate sessions (stale state prevented)
-- No memory exhaustion (resource checks work)
-- User can override AI decisions via priority file
-- Morning digest is AI-generated and valuable
-- Sessions time-boxed to prevent runaway resource usage
+**What to build:**
+- T2: Git Progress Tracking — per-project commit counts, diff stats, fed into context assembler
+- D7: System Resource Context — expand existing `os.freemem()` check to full CPU/disk/GPU context
+- T1: Session Output Evaluation — `lib/session-evaluator.js` with tmux capture + git diff + objective signals (tests pass, commits made) + LLM-as-judge (supplementary)
+- D3: Session Continuation Intelligence — evaluation result drives the `nextPrompt` field
+- Evaluation scoring → state.json for T5 data accumulation
 
-### Deferred to Future (Post-MVP)
+**Pitfalls to address:** #3 (false confidence — objective signals first), #9 (don't add fs.watch)
 
-- Cross-Project Conflict Detection — valuable but complex
-- Natural Language SMS Commands — existing router handles 95% of cases
-- Revenue-Aware Scheduling — requires metadata schema evolution
-- Adaptive Priority Learning — needs weeks of decision log data
+**Research flag:** NO additional research needed. Patterns verified in STACK.md (tmux capture-pane) and FEATURES.md (LLM-as-judge rubric).
+
+---
+
+#### Phase 3: Infrastructure Awareness (Health + Service Recovery)
+
+**Goal:** The Mac Mini IS the infrastructure. The orchestrator must know when services go down and have the authority to respond.
+
+**What to build:**
+- T3: `lib/health-monitor.js` — HTTP pings (native fetch), Docker status (`docker ps`), TCP checks (net module)
+- ServiceDataCache — health checks run on own interval, main loop reads from cache
+- Correlated failure detection — 3+ simultaneous failures = infrastructure event, no restarts
+- Alert routing — tier 1 URGENT for service down, tier 3 for recovery
+- D5: Proactive Service Recovery — `launchctl kickstart` and `docker restart` gated by autonomy level; restart budget (2/hour)
+- MCP bridge foundation — `lib/mcp-bridge.js` or method in `ai-brain.js` for `claude -p --allowedTools`
+- MCP circuit breaker — per-server failure tracking, 5-minute backoff on 3 consecutive failures
+
+**Pitfalls to address:** #1 (MCP cascade), #4 (main loop failure modes), #5 (alert storms)
+
+**Research flag:** MCP tool naming convention needs verification at implementation time (`claude -p --allowedTools "mcp__github__*"`). Quick check, not a full research phase.
+
+---
+
+#### Phase 4: Intelligence (Revenue + Graduated Autonomy + Personal Assistant)
+
+**Goal:** Revenue awareness, trust-building mechanism, and personal assistant upgrade.
+
+**What to build (in order):**
+- T4: `lib/revenue-tracker.js` — start with XMR mining pool API and MLX access log parsing. Add RapidAPI GraphQL only after XMR/MLX are proven stable. Revenue context in AI prompt (with data age). NULL vs zero distinction.
+- T5: Graduated Autonomy — trust metrics tracking (sessions launched, avg eval score, false alerts), promotion criteria (30+ sessions at cautious with avg 3.5+ → recommend moderate), auto-demotion on 3 consecutive low scores, action undo registry
+- D4: Weekly Revenue Report — Sunday 7 AM cron, reuse digest infrastructure
+- D9: Evening Wind-Down Digest — 9:45 PM, reuse digest infrastructure, requires T1/T2 stable
+- D1: Personal Assistant — reminders via node-cron + state persistence, calendar via JXA/osascript, quick lookups via `claude -p` with tool access
+- D8: Conversation Memory — persistent history used for reminder follow-up and continuity
+- D2: MCP per-project configuration — ensure `.mcp.json` exists in session-managed projects for GitHub and filesystem tools
+
+**Pitfalls to address:** #2 (autonomy escalation without rollback), #6 (revenue wrong numbers), #8 (notification overload — implement category budgets before this phase), #13 (macOS Calendar/Reminders permissions)
+
+**Research flag:** Revenue API specifics (RapidAPI GraphQL exact schema, XMR mining pool API format) need verification at implementation time. Recommend `/gsd:research-phase` before T4 sub-task.
+
+---
+
+### Phase Ordering Rationale
+
+| Phase | Delivers | Why This Position |
+|-------|---------|-------------------|
+| 1: Foundation | Safety + testability | Pre-existing risks become critical with v4.0 scope. Fix before expanding. |
+| 2: Feedback Loop | Evaluation + git tracking | Everything else builds on "did that session work?" |
+| 3: Infrastructure | Health monitoring + recovery | Second-most-critical feedback loop after session evaluation. |
+| 4: Intelligence | Revenue + autonomy + PA | Requires evaluation data to accumulate (T5), revenue stability to verify (T4). |
 
 ---
 
 ## Confidence Assessment
 
-| Research Area | Confidence | Notes |
-|---------------|-----------|-------|
-| **Stack** | **HIGH** | `claude -p` is proven, already used across all projects. Zero risk on technology choice. |
-| **Features** | **HIGH** | Feature scope simplified. Same core features, fewer infrastructure requirements. |
-| **Architecture** | **HIGH** | 3 modules instead of 4. Clean integration with existing codebase. Simpler than API approach. |
-| **Pitfalls** | **HIGH** | Biggest risk (cost explosion) eliminated. Remaining risks are well-understood with clear mitigations. |
+| Area | Confidence | Basis |
+|------|------------|-------|
+| Stack | HIGH | Verified: `--json-schema`, `--allowedTools`, `--model` flags tested on this machine. Node v25.6.1 native `fetch` and `fs.watch` verified. Zero new dependencies confirmed feasible. |
+| Features | HIGH | Clear dependency graph. Table stakes justified by v3.0 gaps. Anti-features have strong rationale. Phase ordering is opinionated and defensible. |
+| Architecture | HIGH | Full codebase analysis of all 13 modules. Integration points identified precisely (file/line references). Build order dependency-aware. |
+| Pitfalls | HIGH | Verified against live GitHub issues (MCP timeout #3033, #20335, fs.watch #49916, #52601). LLM-as-judge bias documented by multiple sources. Codebase analysis confirms which lines need changing. |
 
-### Known Gaps
+### Gaps to Address During Implementation
 
-1. **`claude -p` latency:** Need to measure actual response times for typical prompts. Estimated 2-5 seconds but not benchmarked.
+1. **RapidAPI GraphQL schema** — exact query syntax for provider analytics needs live API verification. Confidence: MEDIUM. Do not build T4 RapidAPI integration without testing against live endpoint first.
 
-2. **`claude -p` concurrency:** Need to verify behavior when multiple `claude -p` processes run simultaneously (orchestrator + active sessions).
+2. **XMR mining pool API** — depends on which pool is configured. Need to check `config.json` for pool URL at implementation time.
 
-3. **Structured output reliability:** JSON-in-prompt may have parsing failures. Need to measure failure rate and decide if two-step approach is needed.
+3. **MCP tool naming** — `mcp__github__list_pull_requests` format needs verification against `claude mcp list` output for exact tool names. Run discovery query before using `--allowedTools`.
 
-4. **Session Evaluation Rubric:** What makes a "successful" vs "failed" session? Needs user input on criteria.
+4. **Notification budget recalibration** — the v3.0 budget of 20 SMS/day was not sized for v4.0's new notification sources (health, revenue, reminders). Phase 4 must re-budget before adding new sources.
 
-5. **Priority Weights:** The scoring algorithm weights are recommendations. User should validate.
+5. **Session evaluation rubric thresholds** — what score constitutes "productive" vs "stalled" needs calibration. Start with conservative defaults; adjust after 2 weeks of real data.
+
+---
+
+## Areas of Agreement Across Research Dimensions
+
+All four research files converge on these positions:
+
+- **Zero new npm dependencies** — verified feasible, worth preserving as constraint
+- **Polling over fs.watch** — STACK.md, ARCHITECTURE.md, and PITFALLS.md all recommend staying with polling for most use cases; fs.watch only for active session signal dirs
+- **Hybrid MCP approach** — direct Node.js for simple/frequent, `claude -p --allowedTools` for complex/infrequent
+- **Evaluation before autonomy** — you cannot earn trust without a mechanism to measure success
+- **State file splitting** — `.state.json` cannot hold all v4.0 persistent data without becoming a bottleneck
+- **Revenue tracking starts conservative** — do not use as priority input until 2+ weeks of stable data
+
+## Areas of Tension (Resolved)
+
+- **fs.watch vs. polling for signal files:** STACK.md cautiously recommends fs.watch for signal dirs. ARCHITECTURE.md recommends against for general use. PITFALLS.md documents macOS-specific bugs. Resolution: Use polling as default. Optionally add fs.watch ONLY on `.orchestrator/` dirs of ACTIVE sessions (low volume, targeted scope).
+- **Revenue API approach:** FEATURES.md suggests official APIs (RapidAPI GraphQL). ARCHITECTURE.md suggests starting with static `revenue-data.json`. PITFALLS.md says prove scraping before APIs. Resolution: Start with XMR local API (trivial) and MLX log parsing (local file). Add RapidAPI GraphQL only after infrastructure is stable.
 
 ---
 
 ## Sources
 
-### Official Documentation (HIGH Confidence)
-- Claude Code CLI — `-p` print mode, `--model` flag
-- [Claude Max Plan](https://claude.ai/pricing) — $200/mo unlimited usage
-- [Building Effective Agents](https://www.anthropic.com/research/building-effective-agents)
-- [Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+### HIGH Confidence (Verified on This Machine)
+- `claude -p --help` output — verified `--json-schema`, `--allowedTools`, `--model`, `--max-turns`, `--output-format` flags (Claude Code v2.1.39)
+- `claude mcp list` output — verified 11 MCP servers configured
+- `node --version` — v25.6.1 with native `fetch`, `fs.watch` recursive macOS support
+- Full codebase analysis — all 13 lib modules read and understood with file:line references
+- [Claude Code CLI Reference](https://code.claude.com/docs/en/cli-reference)
+- [GitHub Issue #610](https://github.com/anthropics/claude-code/issues/610) — MCP in print mode FIXED in v0.2.54
 
-### Codebase Analysis (HIGH Confidence)
-- `/Users/claude/projects/project-orchestrator/index.js` — main loop architecture
-- `/Users/claude/projects/project-orchestrator/lib/session-manager.js` — tmux lifecycle
-- `/Users/claude/projects/project-orchestrator/lib/scanner.js` — STATE.md parsing
-- `/Users/claude/projects/project-orchestrator/lib/signal-protocol.js` — signal file handling
-- `/Users/claude/projects/project-orchestrator/config.json` — 18 projects, 60s scan, 5 max sessions
+### HIGH Confidence (Official Documentation)
+- [Anthropic Structured Outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) — constrained decoding for `--json-schema`
+- [Claude Code MCP Docs](https://code.claude.com/docs/en/mcp) — tool naming, scopes, `--allowedTools`
+- [GitHub REST API Rate Limits](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)
+- [Node.js #49916](https://github.com/nodejs/node/issues/49916), [#52601](https://github.com/nodejs/node/issues/52601) — fs.watch macOS bugs
+- [Claude Code #3033](https://github.com/anthropics/claude-code/issues/3033), [#20335](https://github.com/anthropics/claude-code/issues/20335) — MCP timeout unreliability
 
-### Real-World Incidents (MEDIUM Confidence)
-- [tmux Memory Issues](https://github.com/tmux/tmux/issues/1167) — memory growth patterns
-- [tmux Orphan Process Cleanup](https://github.com/steveyegge/gastown/issues/29) — orphaned processes
-- [iMessage Rate Limiting](https://github.com/ZekeSnider/Jared/issues/65) — ~200 msg/hour throttling
+### MEDIUM Confidence (Multiple Sources Agree)
+- LLM-as-Judge bias taxonomy (Langfuse, EvidentlyAI, Softtech)
+- Knight Columbia Autonomy Levels framework (5-level, maps to existing 4-level system)
+- Alert fatigue patterns (Datadog, IBM)
+- RapidAPI GraphQL Platform API for provider analytics
 
----
-
-## Ready for Planning
-
-This research provides a clear foundation for implementation:
-
-1. **Technical path is validated:** `claude -p` via `child_process` — zero dependencies, zero cost
-2. **Feature scope is defined:** 7 table stakes, 9 differentiators, 10 anti-features
-3. **Architecture is mapped:** 3 new modules integrate cleanly with existing codebase
-4. **Risks are identified:** 3 critical + 3 moderate pitfalls with concrete mitigations
-5. **Phase structure is simplified:** 2 phases instead of 3 (cost layer removed)
-6. **Build order is clear:** Observe first, execute second
-
-The planner can proceed with confidence to define detailed phase requirements.
+### LOW Confidence (Verify at Implementation Time)
+- RapidAPI exact GraphQL query schema
+- XMR mining pool API format (pool-specific)
+- MCP tool exact names (discover via `claude mcp list` details)
