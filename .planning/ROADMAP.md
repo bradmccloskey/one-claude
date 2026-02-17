@@ -78,11 +78,14 @@ Plans:
   2. Each completed session receives a quality score (1-5) with a recommendation (continue/retry/escalate/complete) based on objective signals and LLM judgment
   3. When a session resumes a project, its prompt includes the previous session's score and specific accomplishments/failures
   4. The AI context includes current CPU load, free memory, and disk usage, and the AI references resource constraints in its reasoning
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md -- GitTracker + ResourceMonitor (leaf data collection modules)
+- [ ] 04-02-PLAN.md -- SessionEvaluator + state evaluation history
+- [ ] 04-03-PLAN.md -- Session manager: headBefore, stoppedAt, eval-informed resume prompts
+- [ ] 04-04-PLAN.md -- Context assembler + index.js integration wiring
+- [ ] 04-05-PLAN.md -- Tests for git-tracker, session-evaluator, resource-monitor
 
 ### Phase 05: Infrastructure Monitoring
 **Goal**: The orchestrator detects service outages across the Mac Mini and can recover failed services within its autonomy level
@@ -139,7 +142,7 @@ Phases execute in numeric order: 03 -> 04 -> 05 -> 06 -> 07
 | 01. AI Brain Foundation | v3.0 | 3/3 | Complete | 2026-02-16 |
 | 02. Autonomous Execution | v3.0 | 4/4 | Complete | 2026-02-16 |
 | 03. Foundation Hardening | v4.0 | 4/4 | Complete | 2026-02-17 |
-| 04. Session Intelligence | v4.0 | 0/TBD | Not started | - |
+| 04. Session Intelligence | v4.0 | 0/5 | In progress | - |
 | 05. Infrastructure Monitoring | v4.0 | 0/TBD | Not started | - |
 | 06. Revenue & Autonomy | v4.0 | 0/TBD | Not started | - |
 | 07. Personal Assistant | v4.0 | 0/TBD | Not started | - |
