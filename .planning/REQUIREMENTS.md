@@ -11,10 +11,10 @@
 
 ## Session Intelligence
 
-- [ ] **SESS-01**: Orchestrator tracks git progress per project (commit count, diff stats, files changed, last commit timestamp) and feeds into AI context
-- [ ] **SESS-02**: Orchestrator evaluates session output quality using tmux capture + git diff + objective signals (tests, commits) + LLM-as-judge rubric (score 1-5, recommendation: continue/retry/escalate/complete)
-- [ ] **SESS-03**: Session resume prompts incorporate evaluation data ("Last session scored 3/5. Completed: X. Failed: Y. Continue from Z.")
-- [ ] **SESS-04**: AI context includes system resource data (CPU load, free memory, disk usage, active processes) so AI can reason about resource constraints
+- [x] **SESS-01**: Orchestrator tracks git progress per project (commit count, diff stats, files changed, last commit timestamp) and feeds into AI context
+- [x] **SESS-02**: Orchestrator evaluates session output quality using tmux capture + git diff + objective signals (tests, commits) + LLM-as-judge rubric (score 1-5, recommendation: continue/retry/escalate/complete)
+- [x] **SESS-03**: Session resume prompts incorporate evaluation data ("Last session scored 3/5. Completed: X. Failed: Y. Continue from Z.")
+- [x] **SESS-04**: AI context includes system resource data (CPU load, free memory, disk usage, active processes) so AI can reason about resource constraints
 
 ## Infrastructure Monitoring
 
@@ -68,10 +68,10 @@
 | FOUND-04 | 03 | Complete |
 | FOUND-05 | 03 | Complete |
 | FOUND-06 | 03 | Complete |
-| SESS-01 | 04 | Pending |
-| SESS-02 | 04 | Pending |
-| SESS-03 | 04 | Pending |
-| SESS-04 | 04 | Pending |
+| SESS-01 | 04 | Complete |
+| SESS-02 | 04 | Complete |
+| SESS-03 | 04 | Complete |
+| SESS-04 | 04 | Complete |
 | INFRA-01 | 05 | Pending |
 | INFRA-02 | 05 | Pending |
 | INFRA-03 | 05 | Pending |
