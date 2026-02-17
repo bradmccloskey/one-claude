@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 07 of 07 (Personal Assistant)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 07-01-PLAN.md (Reminder Manager)
+Last activity: 2026-02-17 -- Completed 07-02-PLAN.md (Conversation Memory)
 
-Progress: [█████████████████████████] 100% (25/28 v3.0+v4.0 plans complete, 3 Phase 07 plans pending)
+Progress: [██████████████████████████] 100% (26/28 v3.0+v4.0 plans complete, 2 Phase 07 plans pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25 (7 v3.0 + 18 v4.0)
+- Total plans completed: 26 (7 v3.0 + 19 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -33,7 +33,7 @@ Progress: [███████████████████████
 | 04 | 5/5 | ~12m | ~2.4m |
 | 05 | 4/4 | ~12m | ~3m |
 | 06 | 4/4 | ~14m | ~3.5m |
-| 07 | 1/4 | ~2.5m | ~2.5m |
+| 07 | 2/4 | ~5.5m | ~2.75m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -54,7 +54,8 @@ Progress: [███████████████████████
 - 06-03 completed in ~2m (3 tasks, no deviations)
 - 06-04 completed in ~6m (4 tasks, no deviations)
 - 07-01 completed in ~2.5m (3 tasks, no deviations)
-- Trend: Phase 07 in progress. 25/28 plans done.
+- 07-02 completed in ~3m (2 tasks, 1 deviation: test update for SQLite API)
+- Trend: Phase 07 in progress. 26/28 plans done.
 
 ## Accumulated Context
 
@@ -143,9 +144,13 @@ Progress: [███████████████████████
 - 07-01: AI calculates fireAt timestamp in NL handler (zero new dependencies)
 - 07-01: REMINDER_JSON pattern at end of AI response (structured extraction from free-form text)
 - 07-01: text LIKE %query% for fuzzy cancel (simple and sufficient for SMS)
+- 07-02: SQLite LIKE over FTS5 for search (100 rows makes FTS5 overkill)
+- 07-02: Conversation section placed after trust section in context assembly (section 2.95)
+- 07-02: Last 6 entries shown as 80-char previews with relative age in AI context
+- 07-02: JSON migration uses transaction for atomicity, best-effort (no crash on malformed)
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 07-01-PLAN.md (Reminder Manager)
+Stopped at: Completed 07-02-PLAN.md (Conversation Memory)
 Resume file: None
