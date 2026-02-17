@@ -15,6 +15,9 @@ const AIBrain = require("./lib/ai-brain");
 const DecisionExecutor = require("./lib/decision-executor");
 const NotificationManager = require("./lib/notification-manager");
 const ConversationStore = require("./lib/conversation-store");
+const GitTracker = require("./lib/git-tracker");
+const ResourceMonitor = require("./lib/resource-monitor");
+const { SessionEvaluator } = require("./lib/session-evaluator");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -30,6 +33,15 @@ const digest = new DigestFormatter();
 const scheduler = new Scheduler(CONFIG);
 const sessionManager = new SessionManager(CONFIG);
 const signalProtocol = new SignalProtocol(CONFIG.projectsDir);
+const gitTracker = new GitTracker();
+const resourceMonitor = new ResourceMonitor();
+
+// ── Session Evaluator ────────────────────────────────────────────────────────
+const sessionEvaluator = new SessionEvaluator({
+  gitTracker,
+  state,
+  config: CONFIG,
+});
 
 // ── Notifications ────────────────────────────────────────────────────────────
 const notificationManager = new NotificationManager({
@@ -46,6 +58,7 @@ const contextAssembler = new ContextAssembler({
   processMonitor,
   state,
   config: CONFIG,
+  resourceMonitor,
 });
 
 const decisionExecutor = new DecisionExecutor({
@@ -192,6 +205,9 @@ function proactiveScan() {
         commands.setContext(session.projectName, "ended");
         lastSignalState[`${session.projectName}:ended`] = true;
         log("SESSION", `Session ended for ${session.projectName}`);
+
+        // Trigger evaluation for ended session
+        evaluateSession(session.projectName);
       }
     }
 
@@ -199,6 +215,52 @@ function proactiveScan() {
     state.save(s);
   } catch (e) {
     log("SCAN", `Error: ${e.message}`);
+  }
+}
+
+// ── Session evaluation ───────────────────────────────────────────────────────
+async function evaluateSession(projectName) {
+  try {
+    const projectDir = path.join(CONFIG.projectsDir, projectName);
+    const sessionFile = path.join(projectDir, '.orchestrator', 'session.json');
+    if (!fs.existsSync(sessionFile)) {
+      log('EVAL', `No session.json for ${projectName}, skipping evaluation`);
+      return;
+    }
+
+    const sessionData = JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
+
+    // Skip if already evaluated (check if evaluation.json is newer than session start)
+    const evalFile = path.join(projectDir, '.orchestrator', 'evaluation.json');
+    if (fs.existsSync(evalFile)) {
+      try {
+        const existingEval = JSON.parse(fs.readFileSync(evalFile, 'utf-8'));
+        if (new Date(existingEval.evaluatedAt) > new Date(sessionData.startedAt)) {
+          log('EVAL', `${projectName} already evaluated, skipping`);
+          return;
+        }
+      } catch {}
+    }
+
+    log('EVAL', `Evaluating session for ${projectName}...`);
+    const evaluation = await sessionEvaluator.evaluate({
+      projectName: sessionData.projectName || projectName,
+      projectDir,
+      sessionName: sessionData.sessionName,
+      startedAt: sessionData.startedAt,
+      headBefore: sessionData.headBefore || null,
+      prompt: sessionData.prompt || '',
+    });
+
+    log('EVAL', `${projectName}: score=${evaluation.score}/5, recommendation=${evaluation.recommendation}`);
+
+    // Notify user if score is low (escalation)
+    if (evaluation.score <= 2) {
+      const msg = `Session ${projectName} scored ${evaluation.score}/5: ${evaluation.reasoning.substring(0, 200)}`;
+      notificationManager.notify(msg, 2); // tier 2 = action needed
+    }
+  } catch (e) {
+    log('EVAL', `Error evaluating ${projectName}: ${e.message}`);
   }
 }
 
@@ -240,6 +302,9 @@ function checkSessionTimeouts() {
         }
 
         log("TIMEOUT", `Stopped ${session.projectName}: ${result.message}`);
+
+        // Trigger evaluation asynchronously (don't block timeout processing)
+        evaluateSession(session.projectName);
       }
     }
   } catch (e) {
