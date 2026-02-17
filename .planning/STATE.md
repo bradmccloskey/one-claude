@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** ONE Claude to rule all the Claudes -- central AI brain that autonomously manages all Claude Code sessions across ~19 projects on a Mac Mini.
-**Current focus:** Phase 07 IN PROGRESS -- Personal Assistant (final phase of v4.0)
+**Current focus:** v4.0 COMPLETE -- All 7 phases done (28/28 plans)
 
 ## Current Position
 
 Phase: 07 of 07 (Personal Assistant)
-Plan: 3 of 4 in current phase (07-01, 07-02, 07-03 complete)
-Status: In progress
-Last activity: 2026-02-17 -- Completed 07-03-PLAN.md (MCP Session Awareness)
+Plan: 4 of 4 in current phase (all complete)
+Status: v4.0 COMPLETE
+Last activity: 2026-02-17 -- Completed 07-04-PLAN.md (Session Learner + Tests)
 
-Progress: [███████████████████████████] 100% (27/28 v3.0+v4.0 plans complete, 1 Phase 07 plan pending)
+Progress: [████████████████████████████] 100% (28/28 v3.0+v4.0 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27 (7 v3.0 + 20 v4.0)
+- Total plans completed: 28 (7 v3.0 + 21 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -33,7 +33,7 @@ Progress: [███████████████████████
 | 04 | 5/5 | ~12m | ~2.4m |
 | 05 | 4/4 | ~12m | ~3m |
 | 06 | 4/4 | ~14m | ~3.5m |
-| 07 | 3/4 | ~7m | ~2.3m |
+| 07 | 4/4 | ~12.5m | ~3.1m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -56,7 +56,8 @@ Progress: [███████████████████████
 - 07-01 completed in ~2.5m (3 tasks, no deviations)
 - 07-02 completed in ~3m (2 tasks, 1 deviation: test update for SQLite API)
 - 07-03 completed in ~1.5m (2 tasks, no deviations)
-- Trend: Phase 07 in progress. 27/28 plans done.
+- 07-04 completed in ~5.5m (5 tasks, no deviations)
+- **v4.0 COMPLETE: 28/28 plans done. 184 tests passing.**
 
 ## Accumulated Context
 
@@ -153,9 +154,15 @@ Progress: [███████████████████████
 - 07-03: --mcp-config flag only added for project-specific MCP servers beyond user scope
 - 07-03: MCPBridge.KNOWN_SERVERS as single source of truth for tool list in resume prompts
 - 07-03: Session MCP summary is one line after session list, not per-session
+- 07-04: SessionLearner uses shared orchestrator.db with lazy _ensureDb pattern
+- 07-04: Regex keyword classification for prompt style (fix/implement/explore/resume/custom)
+- 07-04: 50-evaluation threshold for pattern analysis (avoids noisy small-sample insights)
+- 07-04: Dual-write to SQLite wrapped in try/catch (non-blocking, evaluation continues on failure)
+- 07-04: Learnings section at position 2.97 in context assembly
+- 07-04: Analysis results cached, invalidated every 10 new evaluations
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 07-03-PLAN.md (MCP Session Awareness)
+Stopped at: v4.0 COMPLETE -- All 28 plans executed
 Resume file: None
