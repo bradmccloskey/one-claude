@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 07 of 07 (Personal Assistant)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase (07-01, 07-02, 07-03 complete)
 Status: In progress
-Last activity: 2026-02-17 -- Completed 07-02-PLAN.md (Conversation Memory)
+Last activity: 2026-02-17 -- Completed 07-03-PLAN.md (MCP Session Awareness)
 
-Progress: [██████████████████████████] 100% (26/28 v3.0+v4.0 plans complete, 2 Phase 07 plans pending)
+Progress: [███████████████████████████] 100% (27/28 v3.0+v4.0 plans complete, 1 Phase 07 plan pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26 (7 v3.0 + 19 v4.0)
+- Total plans completed: 27 (7 v3.0 + 20 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -33,7 +33,7 @@ Progress: [███████████████████████
 | 04 | 5/5 | ~12m | ~2.4m |
 | 05 | 4/4 | ~12m | ~3m |
 | 06 | 4/4 | ~14m | ~3.5m |
-| 07 | 2/4 | ~5.5m | ~2.75m |
+| 07 | 3/4 | ~7m | ~2.3m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -55,7 +55,8 @@ Progress: [███████████████████████
 - 06-04 completed in ~6m (4 tasks, no deviations)
 - 07-01 completed in ~2.5m (3 tasks, no deviations)
 - 07-02 completed in ~3m (2 tasks, 1 deviation: test update for SQLite API)
-- Trend: Phase 07 in progress. 26/28 plans done.
+- 07-03 completed in ~1.5m (2 tasks, no deviations)
+- Trend: Phase 07 in progress. 27/28 plans done.
 
 ## Accumulated Context
 
@@ -148,9 +149,13 @@ Progress: [███████████████████████
 - 07-02: Conversation section placed after trust section in context assembly (section 2.95)
 - 07-02: Last 6 entries shown as 80-char previews with relative age in AI context
 - 07-02: JSON migration uses transaction for atomicity, best-effort (no crash on malformed)
+- 07-03: User-scope MCP servers already inherited by managed sessions; no extra config needed
+- 07-03: --mcp-config flag only added for project-specific MCP servers beyond user scope
+- 07-03: MCPBridge.KNOWN_SERVERS as single source of truth for tool list in resume prompts
+- 07-03: Session MCP summary is one line after session list, not per-session
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 07-02-PLAN.md (Conversation Memory)
+Stopped at: Completed 07-03-PLAN.md (MCP Session Awareness)
 Resume file: None
