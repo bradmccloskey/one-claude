@@ -18,9 +18,9 @@
 
 ## Infrastructure Monitoring
 
-- [ ] **INFRA-01**: Health monitor checks 8+ services via configurable registry in `config.json` — supports HTTP, TCP, process, and Docker check types with per-service intervals and timeouts
-- [ ] **INFRA-02**: Orchestrator can automatically restart failed services (`launchctl kickstart` for launchd services, `docker restart` for containers), gated by autonomy level, with restart budget (max 2/hour) and correlated failure detection (3+ simultaneous = infrastructure event, no restarts)
-- [ ] **INFRA-03**: MCP bridge enables `claude -p --allowedTools` for external integrations (GitHub, Docker, Calendar, Reminders, Memory) with circuit breaker per MCP server (3 consecutive failures = 5-min backoff)
+- [x] **INFRA-01**: Health monitor checks 8+ services via configurable registry in `config.json` — supports HTTP, TCP, process, and Docker check types with per-service intervals and timeouts
+- [x] **INFRA-02**: Orchestrator can automatically restart failed services (`launchctl kickstart` for launchd services, `docker restart` for containers), gated by autonomy level, with restart budget (max 2/hour) and correlated failure detection (3+ simultaneous = infrastructure event, no restarts)
+- [x] **INFRA-03**: MCP bridge enables `claude -p --allowedTools` for external integrations (GitHub, Docker, Calendar, Reminders, Memory) with circuit breaker per MCP server (3 consecutive failures = 5-min backoff)
 
 ## Revenue & Autonomy
 
@@ -72,9 +72,9 @@
 | SESS-02 | 04 | Complete |
 | SESS-03 | 04 | Complete |
 | SESS-04 | 04 | Complete |
-| INFRA-01 | 05 | Pending |
-| INFRA-02 | 05 | Pending |
-| INFRA-03 | 05 | Pending |
+| INFRA-01 | 05 | Complete |
+| INFRA-02 | 05 | Complete |
+| INFRA-03 | 05 | Complete |
 | REV-01 | 06 | Pending |
 | REV-02 | 06 | Pending |
 | REV-03 | 06 | Pending |

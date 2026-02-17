@@ -42,7 +42,7 @@ Plans:
 
 - [x] **Phase 03: Foundation Hardening** - Fix pre-existing risks and lay infrastructure all v4.0 features depend on
 - [x] **Phase 04: Session Intelligence** - Close the feedback loop so the orchestrator knows whether sessions accomplish anything
-- [ ] **Phase 05: Infrastructure Monitoring** - Know when Mac Mini services go down and have authority to respond
+- [x] **Phase 05: Infrastructure Monitoring** - Know when Mac Mini services go down and have authority to respond
 - [ ] **Phase 06: Revenue & Autonomy** - Revenue awareness, trust-building mechanism, and graduated autonomy promotion
 - [ ] **Phase 07: Personal Assistant** - Reminders, persistent conversation memory, MCP-powered sessions, and cross-session learning
 
@@ -97,11 +97,15 @@ Plans:
   1. The orchestrator checks all configured services (HTTP endpoints, Docker containers, launchd processes) on their own intervals and the user receives an SMS when a service goes down
   2. At moderate+ autonomy, the orchestrator automatically restarts a failed launchd service or Docker container -- but stops if 3+ services fail simultaneously (infrastructure event) or the restart budget (2/hour) is exhausted
   3. The orchestrator can call external tools (GitHub, Docker, Calendar, Reminders) via `claude -p --allowedTools` with circuit breaker protection -- 3 consecutive MCP failures disable that server for 5 minutes
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [x] 05-01-PLAN.md -- Health monitor foundation (HTTP, TCP, process, Docker check types + config registry + context integration)
+- [x] 05-02-PLAN.md -- Alert routing and auto-restart (consecutive tracking, correlated failure, restart budget, autonomy gating, index.js wiring)
+- [x] 05-03-PLAN.md -- MCP bridge with circuit breaker (queryMCP function, CircuitBreaker class, context awareness)
+- [x] 05-04-PLAN.md -- Integration tests (health-monitor, mcp-bridge, circuit breaker, helpers update)
+
+**Status: COMPLETE** (2026-02-17)
 
 ### Phase 06: Revenue & Autonomy
 **Goal**: The orchestrator understands which projects generate revenue, builds trust through demonstrated competence, and earns its way to higher autonomy levels
@@ -145,6 +149,6 @@ Phases execute in numeric order: 03 -> 04 -> 05 -> 06 -> 07
 | 02. Autonomous Execution | v3.0 | 4/4 | Complete | 2026-02-16 |
 | 03. Foundation Hardening | v4.0 | 4/4 | Complete | 2026-02-17 |
 | 04. Session Intelligence | v4.0 | 5/5 | Complete | 2026-02-17 |
-| 05. Infrastructure Monitoring | v4.0 | 0/TBD | Not started | - |
+| 05. Infrastructure Monitoring | v4.0 | 4/4 | Complete | 2026-02-17 |
 | 06. Revenue & Autonomy | v4.0 | 0/TBD | Not started | - |
 | 07. Personal Assistant | v4.0 | 0/TBD | Not started | - |
