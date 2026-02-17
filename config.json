@@ -62,5 +62,82 @@
       "batchIntervalMs": 14400000,
       "urgentBypassQuiet": true
     }
+  },
+  "health": {
+    "enabled": true,
+    "services": [
+      {
+        "name": "income-dashboard",
+        "type": "http",
+        "url": "http://localhost:8060/",
+        "intervalMs": 60000,
+        "timeoutMs": 5000,
+        "launchdLabel": "com.income-dashboard"
+      },
+      {
+        "name": "site-monitor",
+        "type": "http",
+        "url": "http://localhost:8070/",
+        "intervalMs": 60000,
+        "timeoutMs": 5000,
+        "launchdLabel": "com.site-monitor"
+      },
+      {
+        "name": "mlx-api",
+        "type": "http",
+        "url": "http://localhost:8100/",
+        "intervalMs": 60000,
+        "timeoutMs": 5000,
+        "launchdLabel": "com.mlx-inference-api"
+      },
+      {
+        "name": "scraping-api",
+        "type": "http",
+        "url": "http://localhost:8002/",
+        "intervalMs": 60000,
+        "timeoutMs": 5000,
+        "launchdLabel": "com.scraping.api"
+      },
+      {
+        "name": "ssh-terminal",
+        "type": "http",
+        "url": "http://localhost:7681/",
+        "intervalMs": 60000,
+        "timeoutMs": 5000,
+        "launchdLabel": "com.ttyd.ssh-terminal"
+      },
+      {
+        "name": "cloudflare-tunnel",
+        "type": "process",
+        "launchdLabel": "com.cloudflare.scraping-api",
+        "intervalMs": 120000
+      },
+      {
+        "name": "xmr-miner",
+        "type": "process",
+        "launchdLabel": "com.xmr-miner",
+        "intervalMs": 300000
+      },
+      {
+        "name": "bandwidth-sharing",
+        "type": "docker",
+        "containers": [
+          "mac-mini-m4pro_honeygain",
+          "mac-mini-m4pro_earnapp",
+          "mac-mini-m4pro_pawns",
+          "mac-mini-m4pro_packetstream",
+          "mac-mini-m4pro_proxyrack",
+          "mac-mini-m4pro_repocket",
+          "mac-mini-m4pro_mysterium",
+          "mac-mini-m4pro_traffmonetizer",
+          "mac-mini-m4pro_theta"
+        ],
+        "intervalMs": 300000,
+        "timeoutMs": 10000
+      }
+    ],
+    "consecutiveFailsBeforeAlert": 3,
+    "restartBudget": { "maxPerHour": 2 },
+    "correlatedFailureThreshold": 3
   }
 }
