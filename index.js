@@ -155,6 +155,110 @@ async function sendDigest() {
   }
 }
 
+// ── Send evening wind-down digest ────────────────────────────────────────────
+async function sendEveningDigest() {
+  try {
+    const { claudePWithSemaphore } = require('./lib/exec');
+
+    // Gather today's data
+    const stateData = state.load();
+    const today = new Date().toISOString().split('T')[0];
+    const todayExecs = (stateData.executionHistory || []).filter(e =>
+      e.timestamp && e.timestamp.startsWith(today)
+    );
+    const todayEvals = (stateData.evaluationHistory || []).filter(e =>
+      e.evaluatedAt && e.evaluatedAt.startsWith(today)
+    );
+
+    // Get commits across all projects today
+    const commitSummaries = [];
+    for (const projectName of CONFIG.projects) {
+      try {
+        const projectDir = path.join(CONFIG.projectsDir, projectName);
+        const progress = gitTracker.getProgress(projectDir, 24);
+        if (progress.commitCount > 0) {
+          commitSummaries.push(`${projectName}: ${progress.commitCount} commits (+${progress.insertions}/-${progress.deletions})`);
+        }
+      } catch {}
+    }
+
+    const prompt = [
+      'You are the AI brain of a project orchestrator. Generate a concise evening wind-down digest SMS (max 500 chars).',
+      '',
+      `Date: ${today}`,
+      '',
+      `Sessions today: ${todayExecs.filter(e => e.action === 'start').length} started`,
+      `Evaluations today: ${todayEvals.length} (avg score: ${todayEvals.length > 0 ? (todayEvals.reduce((s, e) => s + (e.score || 0), 0) / todayEvals.length).toFixed(1) : 'N/A'})`,
+      '',
+      'Commits today:',
+      commitSummaries.length > 0 ? commitSummaries.join('\n') : 'None',
+      '',
+      'Summarize the day\'s accomplishments and suggest what to focus on tomorrow. Be brief and actionable.',
+    ].join('\n');
+
+    const digest = await claudePWithSemaphore(prompt, { maxTurns: 1 });
+    if (digest) {
+      messenger.send(digest.substring(0, 1500));
+      log('DIGEST', 'Sent evening wind-down digest');
+    }
+  } catch (e) {
+    log('DIGEST', `Evening digest error: ${e.message}`);
+  }
+}
+
+// ── Send weekly revenue summary ─────────────────────────────────────────────
+async function sendWeeklyRevenueSummary() {
+  try {
+    const trend = revenueTracker.getWeeklyTrend();
+    const latest = revenueTracker.getLatest();
+
+    const lines = ['Weekly Revenue Summary:'];
+    lines.push('');
+
+    // XMR Mining section
+    lines.push('XMR Mining:');
+    const xmr = latest['xmr-mining'];
+    if (xmr && xmr.balance_atomic !== null) {
+      const balXMR = (xmr.balance_atomic / 1e12).toFixed(6);
+      const balUSD = xmr.xmr_price_usd ? (xmr.balance_atomic / 1e12 * xmr.xmr_price_usd).toFixed(2) : '?';
+      lines.push(`  Balance: ${balXMR} XMR ($${balUSD})`);
+      lines.push(`  Hashrate: ${xmr.hashrate || 0} H/s`);
+    } else {
+      lines.push('  No data available');
+    }
+
+    if (trend.thisWeek.xmr) {
+      const tw = trend.thisWeek.xmr;
+      lines.push(`  This week: ${tw.changeXMR >= 0 ? '+' : ''}${tw.changeXMR.toFixed(6)} XMR ($${tw.changeUSD.toFixed(2)})`);
+      if (trend.lastWeek.xmr) {
+        const lw = trend.lastWeek.xmr;
+        const pctChange = lw.changeUSD !== 0
+          ? Math.round((tw.changeUSD - lw.changeUSD) / Math.abs(lw.changeUSD) * 100)
+          : null;
+        lines.push(`  WoW: ${pctChange !== null ? (pctChange >= 0 ? '+' : '') + pctChange + '%' : 'N/A (first week)'}`);
+      } else {
+        lines.push('  WoW: N/A (first week)');
+      }
+    }
+
+    lines.push('');
+
+    // MLX API section
+    lines.push('MLX API:');
+    if (trend.thisWeek.mlx) {
+      lines.push(`  Requests this week: ${trend.thisWeek.mlx.requests}`);
+    } else {
+      lines.push('  No data available');
+    }
+    lines.push('  Revenue: $0.00 (no active subscribers)');
+
+    messenger.send(lines.join('\n'));
+    log('REVENUE', 'Sent weekly revenue summary');
+  } catch (e) {
+    log('REVENUE', `Weekly summary error: ${e.message}`);
+  }
+}
+
 // ── Proactive alert scan (STATE.md changes + signal files) ──────────────────
 let lastScanResults = {};
 let lastSignalState = {};
@@ -431,6 +535,8 @@ if (existingSessions.length > 0) {
 
 // Start scheduled jobs
 scheduler.startMorningDigest(sendDigest);
+scheduler.startEveningDigest(sendEveningDigest);
+scheduler.startWeeklySummary(sendWeeklyRevenueSummary);
 
 // Daily trust promotion check (10 AM)
 if (CONFIG.trust?.enabled) {
