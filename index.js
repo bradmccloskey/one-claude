@@ -41,6 +41,9 @@ const signalProtocol = new SignalProtocol(CONFIG.projectsDir);
 const gitTracker = new GitTracker();
 const resourceMonitor = new ResourceMonitor();
 
+// ── Session Learner (v4.0 Phase 07) ─────────────────────────────────────────
+const sessionLearner = new SessionLearner({ config: CONFIG });
+
 // ── Session Evaluator ────────────────────────────────────────────────────────
 const sessionEvaluator = new SessionEvaluator({
   gitTracker,
@@ -72,9 +75,6 @@ const trustTracker = new TrustTracker({ config: CONFIG, state });
 
 // ── Reminder Manager (v4.0 Phase 07) ────────────────────────────────────────
 const reminderManager = new ReminderManager({ config: CONFIG, notificationManager });
-
-// ── Session Learner (v4.0 Phase 07) ─────────────────────────────────────────
-const sessionLearner = new SessionLearner({ config: CONFIG });
 
 // ── Conversation Store (v4.0 Phase 07) ───────────────────────────────────────
 const conversationStore = new ConversationStore();
