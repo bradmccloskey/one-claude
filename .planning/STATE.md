@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** ONE Claude to rule all the Claudes -- central AI brain that autonomously manages all Claude Code sessions across ~19 projects on a Mac Mini.
-**Current focus:** Phase 05 in progress -- Health Monitor foundation complete
+**Current focus:** Phase 05 in progress -- Alert routing and auto-restart complete
 
 ## Current Position
 
 Phase: 05 of 07 (Infrastructure Monitoring) -- IN PROGRESS
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 05-01-PLAN.md (Health Monitor Foundation)
+Last activity: 2026-02-17 -- Completed 05-02-PLAN.md (Alert Routing & Auto-Restart)
 
-Progress: [=================---] 85% (17/20 plans complete)
+Progress: [==================--] 90% (18/20 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17 (7 v3.0 + 10 v4.0)
+- Total plans completed: 18 (7 v3.0 + 11 v4.0)
 - Average duration: ~3m (v4.0 plans)
 - Total execution time: N/A
 
@@ -31,7 +31,7 @@ Progress: [=================---] 85% (17/20 plans complete)
 | 02 | 4 | N/A | N/A |
 | 03 | 4/4 | ~14m | ~4m |
 | 04 | 5/5 | ~12m | ~2.4m |
-| 05 | 1/4 | ~2m | ~2m |
+| 05 | 2/4 | ~5m | ~2.5m |
 
 **Recent Trend:**
 - 03-01 completed in ~2m (2 tasks, no deviations)
@@ -44,7 +44,8 @@ Progress: [=================---] 85% (17/20 plans complete)
 - 04-04 completed in ~4m (2 tasks, no deviations)
 - 04-05 completed in ~2m (2 tasks, no deviations)
 - 05-01 completed in ~2m (3 tasks, no deviations)
-- Trend: Phase 05 started. 17/20 plans complete
+- 05-02 completed in ~3m (2 tasks, no deviations)
+- Trend: Phase 05 progressing. 18/20 plans complete
 
 ## Accumulated Context
 
@@ -103,9 +104,13 @@ Progress: [=================---] 85% (17/20 plans complete)
 - 05-01: Any HTTP response (including 4xx/5xx) = UP; only connection/DNS/timeout = DOWN
 - 05-01: formatForContext() returns null (not empty string) when no results exist
 - 05-01: healthMonitor is optional dependency in ContextAssembler (null check, backward compatible)
+- 05-02: Restart notification is tier-2 (ACTION); failure-only alerts are tier-1 (URGENT)
+- 05-02: Only first down Docker container restarted per budget slot (budget-conscious)
+- 05-02: Post-restart verification via setTimeout(30s) -- non-blocking
+- 05-02: Alert fires at exact threshold crossing only (consecutiveFails === 3), not every subsequent failure
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 05-01-PLAN.md (Health Monitor Foundation)
-Resume file: .planning/phases/05-infrastructure-monitoring/05-02-PLAN.md
+Stopped at: Completed 05-02-PLAN.md (Alert Routing & Auto-Restart)
+Resume file: .planning/phases/05-infrastructure-monitoring/05-03-PLAN.md
