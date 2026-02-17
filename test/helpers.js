@@ -66,14 +66,37 @@ function createMockDeps(overrides = {}) {
     },
     signalProtocol: { injectClaudeMd: () => {}, clearSignal: () => {} },
     state: {
-      load: () => ({ aiDecisionHistory: [], executionHistory: [], runtimeAutonomyLevel: 'observe' }),
+      load: () => ({ aiDecisionHistory: [], executionHistory: [], evaluationHistory: [], runtimeAutonomyLevel: 'observe' }),
       save: () => {},
       getAutonomyLevel: () => 'observe',
       logDecision: () => {},
       logExecution: () => {},
+      logEvaluation: () => {},
+      getRecentEvaluations: () => [],
       getErrorRetryCount: () => 0,
     },
     messenger: { send: () => {} },
+    gitTracker: {
+      getProgress: () => ({
+        commitCount: 0, insertions: 0, deletions: 0, filesChanged: 0,
+        fileList: [], lastCommitHash: null, lastCommitMessage: null,
+        lastCommitTimestamp: null, noGit: false,
+      }),
+    },
+    resourceMonitor: {
+      getSnapshot: () => ({
+        cpuLoadAvg1m: 2.0, cpuLoadAvg5m: 1.5, cpuCount: 8,
+        freeMemMB: 4096, totalMemMB: 16384, memUsedPct: 75,
+        diskUsedPct: 45, uptimeHours: 100,
+      }),
+      formatForContext: () => 'System: CPU 2.0/8 cores | RAM 4096MB free/16384MB (75% used) | Disk 45% used | Uptime 100h',
+    },
+    sessionEvaluator: {
+      evaluate: async () => ({
+        score: 3, recommendation: 'continue',
+        accomplishments: [], failures: [], reasoning: 'mock',
+      }),
+    },
     config: { ai: { enabled: true, model: 'sonnet', autonomyLevel: 'observe' }, projects: [] },
     projectNames: [],
     ...overrides,
