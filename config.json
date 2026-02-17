@@ -139,5 +139,27 @@
     "consecutiveFailsBeforeAlert": 3,
     "restartBudget": { "maxPerHour": 2 },
     "correlatedFailureThreshold": 3
+  },
+  "revenue": {
+    "enabled": true,
+    "collectionIntervalScans": 5,
+    "xmrWallet": "45c7vD9rqJyBRX6CMHp4kJAUcB8zZBmKQTkX6KHLcJeXaiDLoLW6NzXYjwHbkWwJuo6zmcoVKTrtAfnVNnyHMgm3P7a4LQD",
+    "retentionDays": 90
+  },
+  "trust": {
+    "enabled": true,
+    "thresholds": {
+      "cautious_to_moderate": {
+        "minSessions": 30,
+        "minAvgScore": 3.5,
+        "minDaysAtLevel": 7
+      },
+      "moderate_to_full": {
+        "minSessions": 50,
+        "minAvgScore": 4.0,
+        "minDaysAtLevel": 14
+      }
+    },
+    "promotionCheckCron": "0 10 * * *"
   }
 }
