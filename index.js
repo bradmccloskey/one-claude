@@ -125,6 +125,7 @@ const commands = new CommandRouter({
   messenger,
   conversationStore,
   reminderManager,
+  trustTracker,
 });
 
 // ── Utility ─────────────────────────────────────────────────────────────────
@@ -188,7 +189,7 @@ async function sendEveningDigest() {
     for (const projectName of CONFIG.projects) {
       try {
         const projectDir = path.join(CONFIG.projectsDir, projectName);
-        const progress = gitTracker.getProgress(projectDir, 24);
+        const progress = gitTracker.getProgress(projectDir, '24 hours ago');
         if (progress.commitCount > 0) {
           commitSummaries.push(`${projectName}: ${progress.commitCount} commits (+${progress.insertions}/-${progress.deletions})`);
         }
