@@ -23,6 +23,7 @@ const RevenueTracker = require("./lib/revenue-tracker");
 const TrustTracker = require("./lib/trust-tracker");
 const ReminderManager = require("./lib/reminder-manager");
 const SessionLearner = require("./lib/session-learner");
+const WebServer = require("./lib/web-server");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -127,6 +128,13 @@ const commands = new CommandRouter({
   reminderManager,
   trustTracker,
 });
+
+// ── Web Dashboard ───────────────────────────────────────────────────────────
+const webServer = new WebServer({
+  scanner, healthMonitor, sessionManager, aiBrain, state,
+  resourceMonitor, revenueTracker, trustTracker, commands, config: CONFIG, scheduler,
+});
+webServer.start().catch(err => log("WEB", `Failed to start: ${err.message}`));
 
 // ── Utility ─────────────────────────────────────────────────────────────────
 function sleep(ms) {
@@ -525,6 +533,7 @@ console.log(`║  Health:    ${(CONFIG.health?.enabled ? CONFIG.health.services.
 console.log(`║  Revenue:  ${(CONFIG.revenue?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
 console.log(`║  Trust:    ${(CONFIG.trust?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
 console.log(`║  Reminders: ${(CONFIG.reminders?.enabled !== false ? 'enabled' : 'disabled').padEnd(33)}║`);
+console.log(`║  Web:       ${'http://127.0.0.1:8051'.padEnd(33)}║`);
 console.log("╚═══════════════════════════════════════════════╝");
 console.log("");
 
@@ -721,6 +730,7 @@ function shutdown(signal) {
   if (thinkInterval) clearTimeout(thinkInterval);
   notificationManager.stopBatchTimer();
   scheduler.stop();
+  webServer.close();
   revenueTracker.close();
   trustTracker.close();
   reminderManager.close();

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ONE Claude — Orchestrator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;--surface:#111827;--border:#1e293b;--text:#e2e8f0;
+  --dim:#64748b;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;
+  --yellow:#eab308;--orange:#f97316;--purple:#a855f7;
+}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px;line-height:1.5}
+a{color:var(--accent);text-decoration:none}
+
+.container{max-width:1400px;margin:0 auto;padding:12px}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px}
+header h1{font-size:16px;font-weight:600;letter-spacing:1px}
+header h1 span{color:var(--accent)}
+.header-meta{display:flex;gap:16px;font-size:12px;color:var(--dim)}
+.header-meta .live{color:var(--green)}
+.header-meta .quiet{color:var(--yellow)}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-full{grid-column:1/-1}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:hidden}
+.card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card h2 .count{color:var(--text);font-size:12px;background:var(--border);padding:1px 6px;border-radius:4px}
+
+/* System Overview */
+.stat-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.stat{flex:1;min-width:120px}
+.stat-label{font-size:11px;color:var(--dim);margin-bottom:2px}
+.stat-value{font-size:18px;font-weight:700}
+.bar{height:6px;background:var(--border);border-radius:3px;margin-top:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s}
+.bar-fill.ok{background:var(--green)}
+.bar-fill.warn{background:var(--yellow)}
+.bar-fill.crit{background:var(--red)}
+
+/* Services */
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.svc{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:6px;font-size:12px}
+.svc .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.svc .dot.up{background:var(--green)}
+.svc .dot.down{background:var(--red);animation:pulse 1.5s infinite}
+.svc .dot.unknown{background:var(--dim)}
+.svc .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.svc .latency{color:var(--dim);font-size:11px}
+
+/* Projects */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+.proj{padding:10px 12px;background:var(--bg);border-radius:6px;border-left:3px solid var(--border)}
+.proj.attention{border-left-color:var(--orange)}
+.proj .proj-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.proj .proj-name{font-weight:600;font-size:12px}
+.proj .proj-phase{font-size:11px;color:var(--dim)}
+.proj .proj-status{font-size:11px;color:var(--dim)}
+.proj .bar{margin-top:6px}
+
+/* Sessions */
+.session-list{display:flex;flex-direction:column;gap:6px}
+.session{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg);border-radius:6px;font-size:12px}
+.session .sess-name{font-weight:600;flex:1}
+.session .sess-dur{color:var(--dim)}
+.session .sess-status{padding:2px 8px;border-radius:4px;font-size:11px}
+.session .sess-status.running{background:rgba(34,197,94,0.15);color:var(--green)}
+.session .sess-status.input{background:rgba(234,179,8,0.15);color:var(--yellow)}
+.session .sess-status.error{background:rgba(239,68,68,0.15);color:var(--red)}
+.no-data{color:var(--dim);font-style:italic;font-size:12px}
+
+/* AI Brain */
+.ai-status{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.ai-chip{padding:4px 10px;border-radius:4px;font-size:12px;background:var(--bg)}
+.ai-chip.enabled{color:var(--green)}
+.ai-chip.disabled{color:var(--red)}
+.ai-chip.thinking{color:var(--yellow);animation:pulse 1.5s infinite}
+.ai-decision{padding:10px;background:var(--bg);border-radius:6px;font-size:12px}
+.ai-decision .decision-time{color:var(--dim);font-size:11px}
+
+/* Command Interface */
+.cmd-area{display:flex;flex-direction:column;gap:8px}
+.cmd-input-row{display:flex;gap:8px}
+.cmd-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none}
+.cmd-input:focus{border-color:var(--accent)}
+.cmd-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:10px 20px;font-family:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.cmd-btn:hover{opacity:0.9}
+.cmd-btn:disabled{opacity:0.5;cursor:not-allowed}
+.cmd-output{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;white-space:pre-wrap;max-height:500px;overflow-y:auto;display:none}
+.cmd-output.visible{display:block}
+.cmd-history-hint{font-size:11px;color:var(--dim)}
+
+/* Animations */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* Connection indicator */
+.conn{width:8px;height:8px;border-radius:50%;display:inline-block}
+.conn.ok{background:var(--green)}
+.conn.err{background:var(--red);animation:pulse 1.5s infinite}
+
+/* Mobile */
+@media(max-width:768px){
+  .grid{grid-template-columns:1fr}
+  .stat-row{flex-direction:column;gap:8px}
+  .svc-grid{grid-template-columns:1fr}
+  .proj-grid{grid-template-columns:1fr}
+  header{flex-direction:column;gap:8px;text-align:center}
+  .header-meta{justify-content:center}
+  .cmd-input-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1><span>ONE</span> Claude — Orchestrator</h1>
+    <div class="header-meta">
+      <span>Uptime: <b id="uptime">—</b></span>
+      <span id="quiet-indicator" style="display:none" class="quiet">QUIET HOURS</span>
+      <span><span id="conn-dot" class="conn err"></span> <span id="conn-text">connecting</span></span>
+    </div>
+  </header>
+
+  <!-- Command Interface -->
+  <div class="card" style="margin-bottom:12px">
+    <h2>Command Interface</h2>
+    <div class="cmd-area">
+      <div class="cmd-input-row">
+        <input class="cmd-input" id="cmd-input" placeholder="Type a command (e.g. status, health, projects)..." autocomplete="off">
+        <button class="cmd-btn" id="cmd-btn" onclick="sendCommand()">Send</button>
+      </div>
+      <div class="cmd-history-hint">Press Up/Down for history</div>
+      <div class="cmd-output" id="cmd-output"></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- System Overview -->
+    <div class="card">
+      <h2>System Overview</h2>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="stat-label">CPU Load</div>
+          <div class="stat-value" id="cpu-val">—</div>
+          <div class="bar"><div class="bar-fill ok" id="cpu-bar" style="width:0"></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Memory</div>
+          <div class="stat-value" id="mem-val">—</div>
+          <div class="bar"><div class="bar-fill ok" id="mem-bar" style="width:0"></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Disk</div>
+          <div class="stat-value" id="disk-val">—</div>
+          <div class="bar"><div class="bar-fill ok" id="disk-bar" style="width:0"></div></div>
+        </div>
+      </div>
+      <div class="stat-row" style="margin-top:8px">
+        <div class="stat">
+          <div class="stat-label">Active Sessions</div>
+          <div class="stat-value" id="session-count">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Services</div>
+          <div class="stat-value" id="service-summary">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Projects</div>
+          <div class="stat-value" id="project-count">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Brain -->
+    <div class="card">
+      <h2>AI Brain</h2>
+      <div class="ai-status">
+        <span class="ai-chip" id="ai-enabled">—</span>
+        <span class="ai-chip" id="ai-autonomy">—</span>
+        <span class="ai-chip" id="ai-thinking" style="display:none">THINKING</span>
+      </div>
+      <div class="ai-decision" id="ai-decision">
+        <div class="no-data">No recent decisions</div>
+      </div>
+    </div>
+
+    <!-- Services Health -->
+    <div class="card grid-full">
+      <h2>Services <span class="count" id="svc-count">0</span></h2>
+      <div class="svc-grid" id="svc-grid"></div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="card grid-full">
+      <h2>Projects <span class="count" id="proj-count">0</span></h2>
+      <div class="proj-grid" id="proj-grid"></div>
+    </div>
+
+    <!-- Active Sessions -->
+    <div class="card">
+      <h2>Active Sessions <span class="count" id="sess-count">0</span></h2>
+      <div class="session-list" id="sess-list">
+        <div class="no-data">No active sessions</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  // ── SSE Connection ──────────────────────────────────────────
+  let evtSource = null;
+  let reconnectTimer = null;
+  const RECONNECT_MS = 5000;
+
+  function connectSSE() {
+    if (evtSource) { try { evtSource.close(); } catch {} }
+    evtSource = new EventSource('/api/events');
+
+    evtSource.onopen = () => {
+      $('conn-dot').className = 'conn ok';
+      $('conn-text').textContent = 'live';
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    };
+
+    evtSource.addEventListener('update', e => {
+      try {
+        const d = JSON.parse(e.data);
+        if (d.overview) renderOverview(d.overview);
+        if (d.health) renderHealth(d.health);
+        if (d.sessions) renderSessions(d.sessions);
+        if (d.ai) renderAI(d.ai);
+      } catch {}
+    });
+
+    evtSource.onerror = () => {
+      $('conn-dot').className = 'conn err';
+      $('conn-text').textContent = 'reconnecting';
+      evtSource.close();
+      if (!reconnectTimer) {
+        reconnectTimer = setTimeout(connectSSE, RECONNECT_MS);
+      }
+    };
+  }
+
+  // ── Initial data load ───────────────────────────────────────
+  async function loadAll() {
+    try {
+      const [overview, health, sessions, ai, projects] = await Promise.all([
+        fetch('/api/overview').then(r=>r.json()),
+        fetch('/api/health').then(r=>r.json()),
+        fetch('/api/sessions').then(r=>r.json()),
+        fetch('/api/ai').then(r=>r.json()),
+        fetch('/api/projects').then(r=>r.json()),
+      ]);
+      renderOverview(overview);
+      renderHealth(health);
+      renderSessions(sessions);
+      renderAI(ai);
+      renderProjects(projects);
+    } catch (e) {
+      console.error('Initial load failed:', e);
+    }
+  }
+
+  // ── Renderers ───────────────────────────────────────────────
+  function barClass(pct) { return pct > 85 ? 'crit' : pct > 65 ? 'warn' : 'ok'; }
+
+  function renderOverview(d) {
+    if (!d) return;
+    const res = d.resources || {};
+
+    // CPU
+    const cpuPct = res.cpuCount ? Math.round((res.cpuLoadAvg1m / res.cpuCount) * 100) : 0;
+    $('cpu-val').textContent = res.cpuLoadAvg1m != null ? res.cpuLoadAvg1m.toFixed(1) + '/' + res.cpuCount : '—';
+    $('cpu-bar').style.width = Math.min(cpuPct, 100) + '%';
+    $('cpu-bar').className = 'bar-fill ' + barClass(cpuPct);
+
+    // Memory
+    const memPct = res.memUsedPct || 0;
+    $('mem-val').textContent = res.memUsedPct != null ? memPct + '%' : '—';
+    $('mem-bar').style.width = memPct + '%';
+    $('mem-bar').className = 'bar-fill ' + barClass(memPct);
+
+    // Disk
+    const diskPct = res.diskUsedPct || 0;
+    $('disk-val').textContent = res.diskUsedPct != null ? diskPct + '%' : '—';
+    $('disk-bar').style.width = diskPct + '%';
+    $('disk-bar').className = 'bar-fill ' + barClass(diskPct);
+
+    // Counters
+    $('session-count').textContent = d.activeSessions ?? '—';
+    const h = d.health || {};
+    $('service-summary').textContent = h.total != null ? h.up + '/' + h.total + ' up' : '—';
+    $('project-count').textContent = d.projectCount ?? '—';
+
+    // Uptime
+    if (d.uptimeSeconds != null) {
+      const hrs = Math.floor(d.uptimeSeconds / 3600);
+      const mins = Math.floor((d.uptimeSeconds % 3600) / 60);
+      $('uptime').textContent = hrs + 'h ' + mins + 'm';
+    }
+
+    // Quiet hours
+    const qi = $('quiet-indicator');
+    if (d.quietMode) { qi.style.display = ''; } else { qi.style.display = 'none'; }
+  }
+
+  function renderHealth(d) {
+    if (!d || !d.results) return;
+    const grid = $('svc-grid');
+    const services = Object.values(d.results);
+    $('svc-count').textContent = services.length;
+
+    grid.innerHTML = services.map(s => {
+      const statusClass = s.status === 'up' ? 'up' : s.status === 'down' ? 'down' : 'unknown';
+      const latency = s.latencyMs != null ? s.latencyMs + 'ms' : '';
+      return `<div class="svc"><span class="dot ${statusClass}"></span><span class="name">${esc(s.name)}</span><span class="latency">${latency}</span></div>`;
+    }).join('');
+  }
+
+  function renderSessions(d) {
+    if (!d || !d.sessions) return;
+    const list = $('sess-list');
+    const sessions = d.sessions;
+    $('sess-count').textContent = sessions.length;
+
+    if (sessions.length === 0) {
+      list.innerHTML = '<div class="no-data">No active sessions</div>';
+      return;
+    }
+    list.innerHTML = sessions.map(s => {
+      let statusClass = 'running';
+      let statusText = 'running';
+      if (s.needsInput) { statusClass = 'input'; statusText = 'needs input'; }
+      if (s.error) { statusClass = 'error'; statusText = 'error'; }
+
+      const dur = s.created ? formatDuration(Date.now() - new Date(s.created).getTime()) : '';
+      return `<div class="session"><span class="sess-name">${esc(s.projectName || s.name)}</span><span class="sess-dur">${dur}</span><span class="sess-status ${statusClass}">${statusText}</span></div>`;
+    }).join('');
+  }
+
+  function renderAI(d) {
+    if (!d || !d.status) return;
+    const s = d.status;
+
+    const enabledEl = $('ai-enabled');
+    enabledEl.textContent = s.enabled ? 'ENABLED' : 'DISABLED';
+    enabledEl.className = 'ai-chip ' + (s.enabled ? 'enabled' : 'disabled');
+
+    $('ai-autonomy').textContent = (s.autonomyLevel || 'observe').toUpperCase();
+
+    const thinkEl = $('ai-thinking');
+    if (s.thinking) {
+      thinkEl.style.display = '';
+      thinkEl.className = 'ai-chip thinking';
+      thinkEl.textContent = 'THINKING...';
+    } else {
+      thinkEl.style.display = 'none';
+    }
+
+    const decEl = $('ai-decision');
+    if (d.lastDecision) {
+      const ld = d.lastDecision;
+      const time = ld.timestamp ? new Date(ld.timestamp).toLocaleString() : '';
+      const summary = ld.summary || ld.action || 'Decision recorded';
+      decEl.innerHTML = `<div class="decision-time">${esc(time)}</div><div>${esc(summary)}</div>`;
+    } else {
+      decEl.innerHTML = '<div class="no-data">No recent decisions</div>';
+    }
+  }
+
+  function renderProjects(d) {
+    if (!d || !d.projects) return;
+    const grid = $('proj-grid');
+    const projects = d.projects;
+    $('proj-count').textContent = projects.length;
+
+    grid.innerHTML = projects.map(p => {
+      const pct = p.progress != null ? p.progress : 0;
+      const attention = p.needsAttention ? ' attention' : '';
+      const phase = p.phase != null ? 'Phase ' + p.phase + (p.totalPhases ? '/' + p.totalPhases : '') : '';
+      const status = p.status || (p.hasState ? '' : 'no state');
+      return `<div class="proj${attention}"><div class="proj-header"><span class="proj-name">${esc(p.name)}</span><span class="proj-phase">${esc(phase)}</span></div><div class="proj-status">${esc(status)}</div>${p.progress != null ? '<div class="bar"><div class="bar-fill ok" style="width:' + pct + '%"></div></div>' : ''}</div>`;
+    }).join('');
+  }
+
+  // ── Command Interface ───────────────────────────────────────
+  const cmdHistory = [];
+  let historyIdx = -1;
+
+  const cmdInput = $('cmd-input');
+  const cmdOutput = $('cmd-output');
+  const cmdBtn = $('cmd-btn');
+
+  cmdInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); sendCommand(); }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (historyIdx < cmdHistory.length - 1) {
+        historyIdx++;
+        cmdInput.value = cmdHistory[cmdHistory.length - 1 - historyIdx];
+      }
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIdx > 0) {
+        historyIdx--;
+        cmdInput.value = cmdHistory[cmdHistory.length - 1 - historyIdx];
+      } else {
+        historyIdx = -1;
+        cmdInput.value = '';
+      }
+    }
+  });
+
+  window.sendCommand = async function() {
+    const text = cmdInput.value.trim();
+    if (!text) return;
+
+    cmdHistory.push(text);
+    historyIdx = -1;
+    cmdInput.value = '';
+    cmdBtn.disabled = true;
+    cmdBtn.textContent = 'Sending...';
+    cmdOutput.classList.add('visible');
+    cmdOutput.textContent = '> ' + text + '\n\nProcessing...';
+
+    try {
+      const res = await fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      cmdOutput.textContent = '> ' + text + '\n\n' + (data.response || data.error || 'No response');
+    } catch (err) {
+      cmdOutput.textContent = '> ' + text + '\n\nError: ' + err.message;
+    } finally {
+      cmdBtn.disabled = false;
+      cmdBtn.textContent = 'Send';
+    }
+
+    // Refresh data after command
+    setTimeout(loadAll, 1000);
+  };
+
+  // ── Helpers ─────────────────────────────────────────────────
+  function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function formatDuration(ms) {
+    if (ms < 0) return '—';
+    const sec = Math.floor(ms / 1000);
+    if (sec < 60) return sec + 's';
+    const min = Math.floor(sec / 60);
+    if (min < 60) return min + 'm';
+    const hr = Math.floor(min / 60);
+    const rm = min % 60;
+    return hr + 'h ' + rm + 'm';
+  }
+
+  // ── Periodic project refresh (SSE doesn't include projects to save bandwidth) ──
+  setInterval(async () => {
+    try {
+      const d = await fetch('/api/projects').then(r => r.json());
+      renderProjects(d);
+    } catch {}
+  }, 30000);
+
+  // ── Boot ────────────────────────────────────────────────────
+  loadAll();
+  connectSSE();
+})();
+</script>
+</body>
+</html>
