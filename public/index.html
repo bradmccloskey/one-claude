@@ -385,7 +385,19 @@ header h1 span{color:var(--accent)}
       const attention = p.needsAttention ? ' attention' : '';
       const phase = p.phase != null ? 'Phase ' + p.phase + (p.totalPhases ? '/' + p.totalPhases : '') : '';
       const status = p.status || (p.hasState ? '' : 'no state');
-      return `<div class="proj${attention}"><div class="proj-header"><span class="proj-name">${esc(p.name)}</span><span class="proj-phase">${esc(phase)}</span></div><div class="proj-status">${esc(status)}</div>${p.progress != null ? '<div class="bar"><div class="bar-fill ok" style="width:' + pct + '%"></div></div>' : ''}</div>`;
+
+      // Project status badge
+      let statusBadge = '';
+      if (p.projectStatus) {
+        const st = p.projectStatus.toLowerCase();
+        let badgeColor = 'var(--dim)';
+        if (st === 'active') badgeColor = 'var(--green)';
+        else if (st === 'complete') badgeColor = 'var(--purple)';
+        else if (st.includes('testing')) badgeColor = 'var(--yellow)';
+        statusBadge = `<div style="margin-top:6px;font-size:10px;color:${badgeColor};text-transform:uppercase;letter-spacing:0.5px;font-weight:600">${esc(p.projectStatus)}</div>`;
+      }
+
+      return `<div class="proj${attention}"><div class="proj-header"><span class="proj-name">${esc(p.name)}</span><span class="proj-phase">${esc(phase)}</span></div><div class="proj-status">${esc(status)}</div>${statusBadge}${p.progress != null ? '<div class="bar"><div class="bar-fill ok" style="width:' + pct + '%"></div></div>' : ''}</div>`;
     }).join('');
   }
 
@@ -426,18 +438,81 @@ header h1 span{color:var(--accent)}
     historyIdx = -1;
     cmdInput.value = '';
     cmdBtn.disabled = true;
-    cmdBtn.textContent = 'Sending...';
+    cmdBtn.textContent = 'Thinking...';
     cmdOutput.classList.add('visible');
-    cmdOutput.textContent = '> ' + text + '\n\nProcessing...';
+    cmdOutput.textContent = '> ' + text + '\n\nThinking...';
 
     try {
-      const res = await fetch('/api/command', {
+      // Use streaming endpoint
+      const res = await fetch('/api/command/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
-      const data = await res.json();
-      cmdOutput.textContent = '> ' + text + '\n\n' + (data.response || data.error || 'No response');
+
+      if (!res.ok) {
+        // Fall back to non-streaming endpoint
+        const fallback = await fetch('/api/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        const data = await fallback.json();
+        cmdOutput.textContent = '> ' + text + '\n\n' + (data.response || data.error || 'No response');
+        cmdBtn.disabled = false;
+        cmdBtn.textContent = 'Send';
+        setTimeout(loadAll, 1000);
+        return;
+      }
+
+      // Parse SSE stream
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let progressText = '';
+      let gotResult = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events from buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete last line
+
+        let eventType = null;
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.substring(7).trim();
+          } else if (line.startsWith('data: ') && eventType) {
+            try {
+              const data = JSON.parse(line.substring(6));
+              if (eventType === 'status') {
+                cmdBtn.textContent = 'Thinking...';
+              } else if (eventType === 'progress') {
+                progressText += data.chunk || '';
+                // Show streaming output (cleaned of control chars)
+                const preview = progressText.replace(/[\x00-\x09\x0b\x0c\x0e-\x1f]/g, '').slice(-2000);
+                if (preview.length > 10) {
+                  cmdOutput.textContent = '> ' + text + '\n\n' + preview;
+                  cmdOutput.scrollTop = cmdOutput.scrollHeight;
+                }
+              } else if (eventType === 'result') {
+                gotResult = true;
+                cmdOutput.textContent = '> ' + text + '\n\n' + (data.response || data.error || 'No response');
+              }
+            } catch {}
+            eventType = null;
+          }
+        }
+      }
+
+      if (!gotResult) {
+        cmdOutput.textContent = '> ' + text + '\n\n' + (progressText || 'No response received.');
+      }
+
     } catch (err) {
       cmdOutput.textContent = '> ' + text + '\n\nError: ' + err.message;
     } finally {
