@@ -565,7 +565,7 @@ scheduler.startEveningDigest(sendEveningDigest);
 scheduler.startWeeklySummary(sendWeeklyRevenueSummary);
 
 // Daily trust promotion check (10 AM)
-if (CONFIG.trust?.enabled) {
+if (CONFIG.trust?.enabled && CONFIG.trust?.promotionCheckEnabled !== false) {
   const promotionJob = require('node-cron').schedule(
     CONFIG.trust.promotionCheckCron || '0 10 * * *',
     () => {

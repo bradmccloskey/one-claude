@@ -42,10 +42,11 @@
   "ai": {
     "enabled": true,
     "model": "sonnet",
-    "thinkIntervalMs": 300000,
+    "thinkIntervalMs": 1800000,
     "maxPromptLength": 8000,
     "autonomyLevel": "observe",
     "protectedProjects": [],
+    "dedupTtlMs": 21600000,
     "cooldowns": {
       "sameProjectMs": 600000,
       "sameActionMs": 300000
@@ -54,7 +55,7 @@
       "minFreeMemoryMB": 256,
       "maxConcurrentThinks": 1
     },
-    "maxSessionDurationMs": 2700000,
+    "maxSessionDurationMs": 5400000,
     "maxErrorRetries": 3,
     "stalenessDays": 3,
     "nl": {
@@ -62,7 +63,7 @@
       "timeout": 300000
     },
     "notifications": {
-      "dailyBudget": 20,
+      "dailyBudget": 10,
       "batchIntervalMs": 14400000,
       "urgentBypassQuiet": true
     }
@@ -140,7 +141,7 @@
         "timeoutMs": 10000
       }
     ],
-    "consecutiveFailsBeforeAlert": 3,
+    "consecutiveFailsBeforeAlert": 5,
     "restartBudget": { "maxPerHour": 2 },
     "correlatedFailureThreshold": 3
   },
@@ -152,6 +153,7 @@
   },
   "trust": {
     "enabled": true,
+    "promotionCheckEnabled": false,
     "thresholds": {
       "cautious_to_moderate": {
         "minSessions": 30,
