@@ -92,6 +92,30 @@ header h1 span{color:var(--accent)}
 .cmd-output.visible{display:block}
 .cmd-history-hint{font-size:11px;color:var(--dim)}
 
+/* Remote Sessions */
+.remote-grid{display:flex;flex-direction:column;gap:8px}
+.remote-entry{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent)}
+.remote-entry.stale{border-left-color:var(--dim);opacity:0.6}
+.remote-entry .remote-label{font-weight:600;font-size:12px;flex-shrink:0;min-width:100px}
+.remote-entry .remote-url{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.remote-entry .remote-url a{color:var(--accent)}
+.remote-entry .remote-url a:hover{text-decoration:underline}
+.remote-entry .remote-meta{font-size:11px;color:var(--dim);flex-shrink:0}
+.remote-entry .remote-actions{flex-shrink:0}
+.remote-entry .remote-rm{background:none;border:1px solid var(--border);color:var(--dim);border-radius:4px;padding:2px 8px;font-family:inherit;font-size:11px;cursor:pointer}
+.remote-entry .remote-rm:hover{border-color:var(--red);color:var(--red)}
+.remote-add{display:flex;gap:8px;margin-top:8px}
+.remote-add input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none}
+.remote-add input:focus{border-color:var(--accent)}
+.remote-add input::placeholder{color:var(--dim)}
+.remote-add button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-family:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.remote-add button:hover{opacity:0.9}
+.remote-process{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border-radius:6px;font-size:11px;color:var(--dim)}
+.remote-process .proc-pid{color:var(--text);font-weight:600;min-width:50px}
+.remote-process .proc-cmd{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.remote-process .proc-rc{color:var(--green);font-size:10px;text-transform:uppercase;font-weight:600}
+.remote-divider{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-top:8px;margin-bottom:4px;padding-left:2px}
+
 /* Animations */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
@@ -133,6 +157,20 @@ header h1 span{color:var(--accent)}
       </div>
       <div class="cmd-history-hint">Press Up/Down for history</div>
       <div class="cmd-output" id="cmd-output"></div>
+    </div>
+  </div>
+
+  <!-- Remote Sessions -->
+  <div class="card" style="margin-bottom:12px">
+    <h2>Remote Sessions <span class="count" id="remote-count">0</span></h2>
+    <div class="remote-grid" id="remote-grid">
+      <div class="no-data">No remote sessions registered</div>
+    </div>
+    <div id="remote-processes"></div>
+    <div class="remote-add">
+      <input id="remote-url" placeholder="Paste remote control URL (https://claude.ai/code?bridge=...)" autocomplete="off">
+      <input id="remote-label" placeholder="Label (optional)" style="max-width:160px" autocomplete="off">
+      <button onclick="registerRemote()">Add</button>
     </div>
   </div>
 
@@ -234,6 +272,7 @@ header h1 span{color:var(--accent)}
         if (d.health) renderHealth(d.health);
         if (d.sessions) renderSessions(d.sessions);
         if (d.ai) renderAI(d.ai);
+        if (d.remoteSessions) renderRemoteSessions(d.remoteSessions);
       } catch {}
     });
 
@@ -250,18 +289,20 @@ header h1 span{color:var(--accent)}
   // ── Initial data load ───────────────────────────────────────
   async function loadAll() {
     try {
-      const [overview, health, sessions, ai, projects] = await Promise.all([
+      const [overview, health, sessions, ai, projects, remoteSessions] = await Promise.all([
         fetch('/api/overview').then(r=>r.json()),
         fetch('/api/health').then(r=>r.json()),
         fetch('/api/sessions').then(r=>r.json()),
         fetch('/api/ai').then(r=>r.json()),
         fetch('/api/projects').then(r=>r.json()),
+        fetch('/api/remote-sessions').then(r=>r.json()),
       ]);
       renderOverview(overview);
       renderHealth(health);
       renderSessions(sessions);
       renderAI(ai);
       renderProjects(projects);
+      renderRemoteSessions(remoteSessions);
     } catch (e) {
       console.error('Initial load failed:', e);
     }
@@ -542,6 +583,90 @@ header h1 span{color:var(--accent)}
     const rm = min % 60;
     return hr + 'h ' + rm + 'm';
   }
+
+  // ── Remote Sessions ────────────────────────────────────────────
+  function renderRemoteSessions(d) {
+    if (!d) return;
+    const grid = $('remote-grid');
+    const procArea = $('remote-processes');
+    const registered = d.registered || [];
+    const processes = d.processes || [];
+    $('remote-count').textContent = registered.length;
+
+    if (registered.length === 0) {
+      grid.innerHTML = '<div class="no-data">No remote sessions registered — paste a URL below or use <code>register-remote</code> from any terminal</div>';
+    } else {
+      grid.innerHTML = registered.map(r => {
+        const age = formatDuration(Date.now() - new Date(r.created).getTime());
+        const alive = r.alive === true ? '&#x2022; alive' : r.alive === false ? '&#x2022; ended' : '';
+        const stale = r.alive === false ? ' stale' : '';
+        return `<div class="remote-entry${stale}">
+          <span class="remote-label">${esc(r.label)}</span>
+          <span class="remote-url"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></span>
+          <span class="remote-meta">${age} ago ${alive}</span>
+          <span class="remote-actions"><button class="remote-rm" onclick="removeRemote('${esc(r.id)}')">×</button></span>
+        </div>`;
+      }).join('');
+    }
+
+    // Show detected Claude processes
+    if (processes.length > 0) {
+      const procHtml = processes.map(p => {
+        const rcBadge = p.isRemoteControl ? '<span class="proc-rc">remote</span>' : '';
+        return `<div class="remote-process">
+          <span class="proc-pid">PID ${p.pid}</span>
+          <span class="proc-cmd">${esc(p.command)}</span>
+          ${rcBadge}
+        </div>`;
+      }).join('');
+      procArea.innerHTML = `<div class="remote-divider">Detected Claude processes</div>${procHtml}`;
+    } else {
+      procArea.innerHTML = '';
+    }
+  }
+
+  window.registerRemote = async function() {
+    const urlInput = $('remote-url');
+    const labelInput = $('remote-label');
+    const url = urlInput.value.trim();
+    if (!url) return;
+
+    try {
+      const res = await fetch('/api/remote-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, label: labelInput.value.trim() || undefined }),
+      });
+      if (res.ok) {
+        urlInput.value = '';
+        labelInput.value = '';
+        // Refresh immediately
+        const data = await fetch('/api/remote-sessions').then(r => r.json());
+        renderRemoteSessions(data);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to register');
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  };
+
+  window.removeRemote = async function(id) {
+    try {
+      await fetch('/api/remote-sessions/' + id, { method: 'DELETE' });
+      const data = await fetch('/api/remote-sessions').then(r => r.json());
+      renderRemoteSessions(data);
+    } catch {}
+  };
+
+  // Allow Enter key to register URL
+  $('remote-url').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); registerRemote(); }
+  });
+  $('remote-label').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); registerRemote(); }
+  });
 
   // ── Periodic project refresh (SSE doesn't include projects to save bandwidth) ──
   setInterval(async () => {
