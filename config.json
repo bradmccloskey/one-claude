@@ -22,6 +22,8 @@
     "revenue/web-scraping-biz",
     "revenue/youtube-automation",
     "revenue/income-dashboard",
+    "revenue/3d-print-shop",
+    "revenue/ai-automation-agency",
     "passive/xmr-miner",
     "passive/bandwidth-sharing",
     "passive/mlx-inference-api",
@@ -31,13 +33,20 @@
     "apps/FootballSquares",
     "networking/network-diagram-generator",
     "networking/cisco-network-test",
+    "networking/cisco-config-diff",
+    "networking/google-sheets-ipam",
     "networking/NetworkProbe",
     "networking/site-monitor",
     "gambling/nc-keno-analyzer",
     "gambling/roulette-strategy",
     "gambling/sports-arbitrage",
+    "gambling/craps-strategy",
     "investment/land-speculation",
-    "investment/crypto-trader"
+    "investment/crypto-trader",
+    "investment/forex-trader",
+    "investment/dvc-rental-business",
+    "infra/project-dashboard",
+    "infra/ssh-terminal"
   ],
   "ai": {
     "enabled": true,
@@ -110,6 +119,30 @@
         "intervalMs": 60000,
         "timeoutMs": 5000,
         "launchdLabel": "com.ttyd.ssh-terminal"
+      },
+      {
+        "name": "3d-print-shop",
+        "type": "http",
+        "url": "http://localhost:8055/",
+        "intervalMs": 60000,
+        "timeoutMs": 5000,
+        "launchdLabel": "com.print-shop"
+      },
+      {
+        "name": "ai-agency-portfolio",
+        "type": "http",
+        "url": "http://localhost:8080/",
+        "intervalMs": 60000,
+        "timeoutMs": 5000,
+        "launchdLabel": "com.ai-agency.portfolio"
+      },
+      {
+        "name": "project-dashboard",
+        "type": "http",
+        "url": "http://localhost:8050/",
+        "intervalMs": 60000,
+        "timeoutMs": 5000,
+        "launchdLabel": "com.project-dashboard.server"
       },
       {
         "name": "cloudflare-tunnel",
