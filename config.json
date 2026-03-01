@@ -177,7 +177,7 @@
   },
   "trust": {
     "enabled": true,
-    "promotionCheckEnabled": false,
+    "promotionCheckEnabled": true,
     "thresholds": {
       "cautious_to_moderate": {
         "minSessions": 30,
@@ -193,12 +193,12 @@
     "promotionCheckCron": "0 10 * * *"
   },
   "eveningDigest": {
-    "enabled": false,
+    "enabled": true,
     "cron": "45 21 * * *",
     "timezone": "America/New_York"
   },
   "weeklyRevenue": {
-    "enabled": false,
+    "enabled": true,
     "cron": "0 7 * * 0",
     "timezone": "America/New_York"
   },
