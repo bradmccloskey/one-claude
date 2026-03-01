@@ -372,13 +372,9 @@ describe('RevenueTracker', () => {
       try {
         tracker._ensureDb();
         const now = new Date();
-        // Get start of this week (Sunday)
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay());
-        weekStart.setHours(1, 0, 0, 0);
-
-        const early = weekStart.toISOString();
-        const late = new Date(weekStart.getTime() + 86400000).toISOString(); // 1 day later
+        // Insert two records: one 2 hours ago, one 1 hour ago (both within this week and before now)
+        const early = new Date(now.getTime() - 7200000).toISOString(); // 2 hours ago
+        const late = new Date(now.getTime() - 3600000).toISOString();  // 1 hour ago
 
         tracker.db
           .prepare(
@@ -407,12 +403,9 @@ describe('RevenueTracker', () => {
       try {
         tracker._ensureDb();
         const now = new Date();
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay());
-        weekStart.setHours(1, 0, 0, 0);
-
-        const early = weekStart.toISOString();
-        const late = new Date(weekStart.getTime() + 86400000).toISOString();
+        // Insert two records: one 2 hours ago, one 1 hour ago (both within this week and before now)
+        const early = new Date(now.getTime() - 7200000).toISOString(); // 2 hours ago
+        const late = new Date(now.getTime() - 3600000).toISOString();  // 1 hour ago
 
         tracker.db
           .prepare(

@@ -7,6 +7,8 @@ const { createMockDeps } = require('./helpers');
 
 const WebServer = require('../lib/web-server');
 
+let testPort;
+
 /**
  * Make an HTTP request and return { statusCode, headers, body }.
  */
@@ -14,7 +16,7 @@ function request(method, path, body) {
   return new Promise((resolve, reject) => {
     const opts = {
       hostname: '127.0.0.1',
-      port: 8051,
+      port: testPort,
       path,
       method,
       headers: {},
@@ -49,6 +51,9 @@ describe('WebServer', () => {
         scanAll: () => [
           { name: 'test-project', hasState: true, progress: 50, status: 'active', phase: 1, totalPhases: 5, needsAttention: false },
         ],
+        scanAllEnriched: () => [
+          { name: 'test-project', hasState: true, progress: 50, status: 'active', phase: 1, totalPhases: 5, needsAttention: false, blockers: [], gitBranch: 'main', dirtyFiles: 0, gsdPhasesTotal: 5, gsdPhasesComplete: 3 },
+        ],
       },
       aiBrain: {
         getStatus: () => ({ enabled: true, lastThinkTime: null, thinking: false, autonomyLevel: 'observe', recentDecisions: 0 }),
@@ -68,8 +73,10 @@ describe('WebServer', () => {
       },
     });
 
+    mockDeps.port = 0; // OS-assigned port to avoid conflicts
     server = new WebServer(mockDeps);
     await server.start();
+    testPort = server._port;
   });
 
   after(() => {
@@ -194,7 +201,7 @@ describe('WebServer', () => {
     const data = await new Promise((resolve, reject) => {
       const req = http.get({
         hostname: '127.0.0.1',
-        port: 8051,
+        port: testPort,
         path: '/api/events',
       }, res => {
         assert.strictEqual(res.statusCode, 200);
