@@ -45,7 +45,6 @@
     "investment/crypto-trader",
     "investment/forex-trader",
     "investment/dvc-rental-business",
-    "infra/project-dashboard",
     "infra/ssh-terminal"
   ],
   "ai": {
@@ -72,9 +71,9 @@
       "timeout": 300000
     },
     "notifications": {
-      "dailyBudget": 10,
+      "dailyBudget": 2,
       "batchIntervalMs": 14400000,
-      "urgentBypassQuiet": true
+      "urgentBypassQuiet": false
     }
   },
   "health": {
@@ -137,14 +136,6 @@
         "launchdLabel": "com.ai-agency.portfolio"
       },
       {
-        "name": "project-dashboard",
-        "type": "http",
-        "url": "http://localhost:8050/",
-        "intervalMs": 60000,
-        "timeoutMs": 5000,
-        "launchdLabel": "com.project-dashboard.server"
-      },
-      {
         "name": "cloudflare-tunnel",
         "type": "process",
         "launchdLabel": "com.cloudflare.scraping-api",
@@ -202,12 +193,12 @@
     "promotionCheckCron": "0 10 * * *"
   },
   "eveningDigest": {
-    "enabled": true,
+    "enabled": false,
     "cron": "45 21 * * *",
     "timezone": "America/New_York"
   },
   "weeklyRevenue": {
-    "enabled": true,
+    "enabled": false,
     "cron": "0 7 * * 0",
     "timezone": "America/New_York"
   },

@@ -24,6 +24,8 @@ const TrustTracker = require("./lib/trust-tracker");
 const ReminderManager = require("./lib/reminder-manager");
 const SessionLearner = require("./lib/session-learner");
 const WebServer = require("./lib/web-server");
+const ScanDB = require("./lib/scan-db");
+const EmailDigest = require("./lib/email-digest");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -32,7 +34,8 @@ const CONFIG = JSON.parse(
 
 // ── Initialize modules ──────────────────────────────────────────────────────
 const state = new StateManager();
-const scanner = new ProjectScanner(CONFIG.projectsDir, CONFIG.projects);
+const scanDb = new ScanDB();
+const scanner = new ProjectScanner(CONFIG.projectsDir, CONFIG.projects, { scanDb });
 const processMonitor = new ProcessMonitor(CONFIG.projectsDir, CONFIG.idleThresholdMinutes);
 const messenger = new Messenger(CONFIG);
 const digest = new DigestFormatter();
@@ -132,9 +135,12 @@ const commands = new CommandRouter({
 // ── Web Dashboard ───────────────────────────────────────────────────────────
 const webServer = new WebServer({
   scanner, healthMonitor, sessionManager, aiBrain, state,
-  resourceMonitor, revenueTracker, trustTracker, commands, config: CONFIG, scheduler,
+  resourceMonitor, revenueTracker, trustTracker, commands, config: CONFIG, scheduler, scanDb,
 });
 webServer.start().catch(err => log("WEB", `Failed to start: ${err.message}`));
+
+// ── Email Digest (ported from project-dashboard) ─────────────────────────────
+const emailDigest = new EmailDigest({ scanner, healthMonitor, sessionManager, scanDb });
 
 // ── Utility ─────────────────────────────────────────────────────────────────
 function sleep(ms) {
@@ -148,6 +154,9 @@ function log(tag, msg) {
 // ── Send morning digest ─────────────────────────────────────────────────────
 async function sendDigest() {
   try {
+    // Send email digest (runs independently of SMS digest)
+    emailDigest.send().catch(e => log("EMAIL", `Email digest error: ${e.message}`));
+
     // Try AI-generated digest first
     if (aiBrain.isEnabled()) {
       log("DIGEST", "Generating AI digest...");
@@ -603,6 +612,14 @@ const scanInterval = setInterval(() => {
     try { trustTracker.update(); } catch (e) { log('TRUST', `Update error: ${e.message}`); }
   }
 
+  // Scan DB cleanup every 60 scans (~1 hour at 60s interval)
+  if (scanCount % 60 === 0) {
+    try {
+      const cleaned = scanDb.cleanup();
+      if (cleaned > 0) log('SCANDB', `Cleaned ${cleaned} old scan records`);
+    } catch (e) { log('SCANDB', `Cleanup error: ${e.message}`); }
+  }
+
   // Reminder check every scan (fire pending reminders)
   if (CONFIG.reminders?.enabled !== false) {
     try { reminderManager.checkAndFire(); } catch (e) { log('REMINDER', `Check error: ${e.message}`); }
@@ -731,6 +748,7 @@ function shutdown(signal) {
   notificationManager.stopBatchTimer();
   scheduler.stop();
   webServer.close();
+  scanDb.close();
   revenueTracker.close();
   trustTracker.close();
   reminderManager.close();

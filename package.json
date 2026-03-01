@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "nodemailer": "^8.0.1"
   }
 }
