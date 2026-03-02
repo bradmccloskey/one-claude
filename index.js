@@ -27,6 +27,8 @@ const WebServer = require("./lib/web-server");
 const ScanDB = require("./lib/scan-db");
 const EmailDigest = require("./lib/email-digest");
 const UpworkScanner = require("./lib/upwork-scanner");
+const UpworkDB = require("./lib/upwork-db");
+const UpworkProposals = require("./lib/upwork-proposals");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -93,6 +95,11 @@ orchestratorDb.pragma("journal_mode = WAL");
 const upworkScanner = new UpworkScanner({ db: orchestratorDb, messenger, config: CONFIG });
 upworkScanner.init().catch(e => log("UPWORK", `Browser init error: ${e.message}`));
 
+// Phase 2: Shared UpworkDB instance + Proposal engine
+const upworkDb = new UpworkDB(orchestratorDb);
+upworkDb.ensureSchema();
+const upworkProposals = new UpworkProposals({ db: upworkDb, log: (msg) => log("UPWORK", msg) });
+
 // ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
 const contextAssembler = new ContextAssembler({
   scanner,
@@ -146,6 +153,7 @@ const commands = new CommandRouter({
 const webServer = new WebServer({
   scanner, healthMonitor, sessionManager, aiBrain, state,
   resourceMonitor, revenueTracker, trustTracker, commands, config: CONFIG, scheduler, scanDb,
+  upworkDb, upworkProposals,
 });
 webServer.start().catch(err => log("WEB", `Failed to start: ${err.message}`));
 
@@ -610,6 +618,18 @@ if (CONFIG.upwork?.enabled) {
       try {
         const result = await upworkScanner.poll();
         log('UPWORK', `Scan: found=${result.found}, filtered=${result.filtered}, inserted=${result.inserted}`);
+
+        // Generate proposals for jobs that need them (fire-and-forget)
+        if (result.inserted > 0) {
+          const pending = upworkDb.getPendingJobs(10);
+          const needsProposal = pending.filter(j => j.status === 'new' && !j.cover_letter);
+          for (const job of needsProposal) {
+            upworkProposals.generateAndSave(job); // intentionally not awaited
+          }
+          if (needsProposal.length > 0) {
+            log('UPWORK', `Queued ${needsProposal.length} proposal generation(s)`);
+          }
+        }
       } catch (e) {
         log('UPWORK', `Scan error: ${e.message}`);
       }
