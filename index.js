@@ -666,6 +666,63 @@ if (CONFIG.upwork?.enabled) {
           if (needsProposal.length > 0) {
             log('UPWORK', `Queued ${needsProposal.length} proposal generation(s) (score >= 50)`);
           }
+
+          // INT-01: Notify for high-match jobs via iMessage
+          const autoSettings = upworkDb.getAutoApplySettings();
+          if (autoSettings.notifyHighMatch) {
+            const highMatch = pending.filter(j => (j.match_score || 0) >= autoSettings.notifyThreshold);
+            for (const job of highMatch) {
+              const rate = job.rate_max ? `$${job.rate_max}/hr` : (job.budget ? `$${job.budget} fixed` : 'rate TBD');
+              const msg = `UPWORK HIGH MATCH (${job.match_score}%)\n${job.title}\n${rate}\nhttps://www.upwork.com/jobs/~${job.uid}`;
+              notificationManager.notify(msg, NotificationManager.ACTION);
+              log('UPWORK', `High-match notification sent: ${job.uid} (score ${job.match_score})`);
+            }
+          }
+        }
+
+        // SUB-03/04-02: Auto-apply for qualifying jobs
+        const autoApply = upworkDb.getAutoApplySettings();
+        if (autoApply.enabled) {
+          const hour = new Date().getHours();
+          if (hour < autoApply.startHour || hour >= autoApply.endHour) {
+            log('UPWORK', `Auto-apply skipped: outside time window (${autoApply.startHour}:00-${autoApply.endHour}:00, current: ${hour}:00)`);
+          } else {
+            const dailyCount = upworkDb.getAutoApplyCountToday();
+            if (dailyCount >= autoApply.maxDaily) {
+              log('UPWORK', `Auto-apply skipped: daily limit reached (${dailyCount}/${autoApply.maxDaily})`);
+            } else {
+              const connects = upworkDb.getConnectsBalance();
+              if (connects.balance !== null && connects.balance < autoApply.connectsFloor) {
+                log('UPWORK', `Auto-apply skipped: connects below floor (${connects.balance}/${autoApply.connectsFloor})`);
+              } else {
+                const readyJobs = upworkDb.getPendingJobs(10).filter(
+                  j => j.status === 'proposal_ready' && j.cover_letter && (j.match_score || 0) >= autoApply.threshold
+                );
+                const remaining = autoApply.maxDaily - dailyCount;
+                const toApply = readyJobs.slice(0, remaining);
+                for (const job of toApply) {
+                  log('UPWORK', `Auto-applying to ${job.uid} (score ${job.match_score})`);
+                  upworkDb.updateJobStatus(job.uid, 'submitting', 'auto_applied');
+                  upworkSubmitter.submitJob(job, {
+                    coverLetter: job.cover_letter,
+                    screeningAnswers: job.proposal_screening_answers || null,
+                  }).then(r => {
+                    if (r.success) {
+                      // Tag as auto-applied for daily count tracking
+                      upworkDb.updateJobStatus(job.uid, 'applied', 'auto_applied');
+                      notificationManager.notify(
+                        `UPWORK AUTO-APPLIED\n${job.title}\nScore: ${job.match_score}%`,
+                        NotificationManager.ACTION
+                      );
+                    }
+                  }).catch(e => log('UPWORK', `Auto-apply error for ${job.uid}: ${e.message}`));
+                }
+                if (toApply.length > 0) {
+                  log('UPWORK', `Auto-applied to ${toApply.length} job(s)`);
+                }
+              }
+            }
+          }
         }
       } catch (e) {
         log('UPWORK', `Scan error: ${e.message}`);
