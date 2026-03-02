@@ -619,15 +619,15 @@ if (CONFIG.upwork?.enabled) {
         const result = await upworkScanner.poll();
         log('UPWORK', `Scan: found=${result.found}, filtered=${result.filtered}, inserted=${result.inserted}`);
 
-        // Generate proposals for jobs that need them (fire-and-forget)
+        // Auto-generate proposals only for high-score jobs (50+)
         if (result.inserted > 0) {
           const pending = upworkDb.getPendingJobs(10);
-          const needsProposal = pending.filter(j => j.status === 'new' && !j.cover_letter);
+          const needsProposal = pending.filter(j => j.status === 'new' && !j.cover_letter && (j.match_score || 0) >= 50);
           for (const job of needsProposal) {
             upworkProposals.generateAndSave(job); // intentionally not awaited
           }
           if (needsProposal.length > 0) {
-            log('UPWORK', `Queued ${needsProposal.length} proposal generation(s)`);
+            log('UPWORK', `Queued ${needsProposal.length} proposal generation(s) (score >= 50)`);
           }
         }
       } catch (e) {
