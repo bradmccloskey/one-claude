@@ -124,6 +124,50 @@ header h1 span{color:var(--accent)}
 .remote-process .proc-rc{color:var(--green);font-size:13px;text-transform:uppercase;font-weight:600}
 .remote-divider{font-size:14px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-top:8px;margin-bottom:4px;padding-left:2px}
 
+/* Upwork */
+.upwork-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.upwork-connects{display:flex;align-items:center;gap:8px;font-size:15px}
+.upwork-connects .connects-val{font-weight:700;font-size:20px}
+.upwork-connects .connects-val.ok{color:var(--green)}
+.upwork-connects .connects-val.warn{color:var(--yellow)}
+.upwork-connects .connects-val.crit{color:var(--red)}
+.upwork-connects .connects-label{color:var(--dim)}
+.upwork-connects .connects-age{font-size:13px;color:var(--dim)}
+.upwork-jobs{display:flex;flex-direction:column;gap:10px}
+.upwork-job{padding:12px 14px;background:var(--bg);border-radius:6px;border-left:3px solid var(--border)}
+.upwork-job.high{border-left-color:var(--green)}
+.upwork-job.mid{border-left-color:var(--yellow)}
+.upwork-job.low{border-left-color:var(--dim)}
+.upwork-job-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+.upwork-job-title{font-weight:600;font-size:15px;flex:1}
+.upwork-job-title a{color:var(--text)}
+.upwork-job-title a:hover{color:var(--accent)}
+.upwork-score{padding:2px 8px;border-radius:4px;font-size:14px;font-weight:700;flex-shrink:0}
+.upwork-score.high{background:rgba(34,197,94,0.15);color:var(--green)}
+.upwork-score.mid{background:rgba(234,179,8,0.15);color:var(--yellow)}
+.upwork-score.low{background:rgba(100,116,139,0.15);color:var(--dim)}
+.upwork-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--dim);margin-bottom:8px}
+.upwork-meta .rate{color:var(--green);font-weight:600}
+.upwork-desc{font-size:14px;color:var(--dim);margin-bottom:8px;max-height:60px;overflow:hidden;cursor:pointer}
+.upwork-desc.expanded{max-height:none}
+.upwork-proposal-area{margin-top:8px}
+.upwork-proposal-label{font-size:13px;color:var(--dim);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.upwork-proposal{width:100%;min-height:100px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-family:inherit;font-size:14px;resize:vertical;outline:none}
+.upwork-proposal:focus{border-color:var(--accent)}
+.upwork-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.upwork-btn{padding:6px 14px;border-radius:4px;font-family:inherit;font-size:14px;cursor:pointer;border:none}
+.upwork-btn.generate{background:var(--accent);color:#fff}
+.upwork-btn.generate:hover{opacity:0.9}
+.upwork-btn.save{background:var(--green);color:#fff}
+.upwork-btn.save:hover{opacity:0.9}
+.upwork-btn.dismiss{background:none;border:1px solid var(--border);color:var(--dim)}
+.upwork-btn.dismiss:hover{border-color:var(--red);color:var(--red)}
+.upwork-btn:disabled{opacity:0.5;cursor:not-allowed}
+.upwork-screening{margin-top:8px;padding:8px 10px;background:var(--surface);border-radius:6px;font-size:13px;color:var(--dim)}
+.upwork-screening summary{cursor:pointer;color:var(--text);font-size:14px}
+.upwork-empty{text-align:center;padding:30px;color:var(--dim)}
+.upwork-empty .big{font-size:18px;margin-bottom:6px}
+
 /* Animations */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
@@ -179,6 +223,21 @@ header h1 span{color:var(--accent)}
       <input id="remote-url" placeholder="Paste remote control URL (https://claude.ai/code?bridge=...)" autocomplete="off">
       <input id="remote-label" placeholder="Label (optional)" style="max-width:160px" autocomplete="off">
       <button onclick="registerRemote()">Add</button>
+    </div>
+  </div>
+
+  <!-- Upwork Pipeline -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="upwork-header">
+      <h2>Upwork Pipeline <span class="count" id="upwork-count">0</span></h2>
+      <div class="upwork-connects">
+        <span class="connects-label">Connects:</span>
+        <span class="connects-val" id="connects-val">—</span>
+        <span class="connects-age" id="connects-age"></span>
+      </div>
+    </div>
+    <div class="upwork-jobs" id="upwork-jobs">
+      <div class="no-data">Loading Upwork jobs...</div>
     </div>
   </div>
 
@@ -311,6 +370,7 @@ header h1 span{color:var(--accent)}
       renderAI(ai);
       renderProjects(projects);
       renderRemoteSessions(remoteSessions);
+      loadUpwork();
     } catch (e) {
       console.error('Initial load failed:', e);
     }
@@ -704,6 +764,193 @@ header h1 span{color:var(--accent)}
     if (e.key === 'Enter') { e.preventDefault(); registerRemote(); }
   });
 
+  // ── Upwork Pipeline ────────────────────────────────────────
+  async function loadUpwork() {
+    try {
+      const d = await fetch('/api/upwork/jobs').then(r => r.json());
+      renderUpwork(d);
+    } catch {}
+  }
+
+  function renderUpwork(d) {
+    if (!d) return;
+    const container = $('upwork-jobs');
+    const jobs = d.jobs || [];
+    $('upwork-count').textContent = jobs.length;
+
+    // Connects balance
+    const connects = d.connects || {};
+    const cVal = $('connects-val');
+    const cAge = $('connects-age');
+    if (connects.balance != null) {
+      cVal.textContent = connects.balance;
+      cVal.className = 'connects-val ' + (connects.balance >= 30 ? 'ok' : connects.balance >= 15 ? 'warn' : 'crit');
+      if (connects.lastChecked) {
+        const age = formatDuration(Date.now() - new Date(connects.lastChecked).getTime());
+        cAge.textContent = '(' + age + ' ago)';
+      }
+    } else {
+      cVal.textContent = '—';
+      cVal.className = 'connects-val';
+      cAge.textContent = '';
+    }
+
+    if (jobs.length === 0) {
+      container.innerHTML = '<div class="upwork-empty"><div class="big">No pending jobs</div><div>Scanner runs every 30 minutes</div></div>';
+      return;
+    }
+
+    container.innerHTML = jobs.map(j => {
+      const score = j.match_score != null ? j.match_score : 0;
+      const scoreClass = score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low';
+
+      // Rate display
+      let rateText = '';
+      if (j.job_type === 'hourly' && j.rate_min != null) {
+        rateText = '$' + j.rate_min + (j.rate_max && j.rate_max !== j.rate_min ? '-$' + j.rate_max : '') + '/hr';
+      } else if (j.budget != null) {
+        rateText = '$' + j.budget + ' fixed';
+      }
+
+      // Client info
+      const clientParts = [];
+      if (j.client_rating != null) clientParts.push(j.client_rating.toFixed(1) + ' rating');
+      if (j.client_total_spent) clientParts.push(j.client_total_spent + ' spent');
+      if (j.client_payment_verified) clientParts.push('verified');
+      const clientText = clientParts.join(' · ') || 'no client data';
+
+      // Proposals count
+      const propCount = j.proposals_count || '';
+
+      // Time ago
+      const age = j.found_at ? formatDuration(Date.now() - new Date(j.found_at + 'Z').getTime()) + ' ago' : '';
+
+      // Proposal text
+      const proposal = j.cover_letter || '';
+      const hasProposal = proposal.length > 0;
+      const statusLabel = j.status === 'proposal_ready' ? 'Proposal ready' : hasProposal ? 'Draft' : 'No proposal';
+
+      // Screening questions
+      let screeningHtml = '';
+      if (j.screening_questions) {
+        screeningHtml = '<details class="upwork-screening"><summary>Screening Questions</summary><pre style="white-space:pre-wrap;margin-top:6px">' + esc(j.screening_questions) + '</pre></details>';
+      }
+
+      // Screening answers from proposal
+      let screeningAnswersHtml = '';
+      if (j.proposal_screening_answers) {
+        screeningAnswersHtml = '<details class="upwork-screening"><summary>Screening Answers</summary><pre style="white-space:pre-wrap;margin-top:6px">' + esc(j.proposal_screening_answers) + '</pre></details>';
+      }
+
+      return `<div class="upwork-job ${scoreClass}" data-uid="${esc(j.uid)}" data-id="${j.id}">
+        <div class="upwork-job-header">
+          <div class="upwork-job-title"><a href="${esc(j.url)}" target="_blank" rel="noopener">${esc(j.title)}</a></div>
+          <span class="upwork-score ${scoreClass}">${score}</span>
+        </div>
+        <div class="upwork-meta">
+          ${rateText ? '<span class="rate">' + esc(rateText) + '</span>' : ''}
+          <span>${esc(clientText)}</span>
+          ${propCount ? '<span>' + esc(propCount) + ' proposals</span>' : ''}
+          <span>${age}</span>
+        </div>
+        ${j.description ? '<div class="upwork-desc" onclick="this.classList.toggle(\'expanded\')">' + esc(j.description.substring(0, 300)) + (j.description.length > 300 ? '...' : '') + '</div>' : ''}
+        ${screeningHtml}
+        <div class="upwork-proposal-area">
+          <div class="upwork-proposal-label"><span>${statusLabel}</span></div>
+          <textarea class="upwork-proposal" id="proposal-${j.id}" placeholder="Cover letter will appear here...">${esc(proposal)}</textarea>
+          ${screeningAnswersHtml}
+        </div>
+        <div class="upwork-actions">
+          <button class="upwork-btn generate" onclick="generateProposal('${esc(j.uid)}', this)" ${hasProposal ? '' : ''}>Generate Proposal</button>
+          <button class="upwork-btn save" onclick="saveProposal(${j.id}, '${esc(j.uid)}')" ${hasProposal ? '' : 'disabled'}>Save Edits</button>
+          <button class="upwork-btn dismiss" onclick="dismissJob('${esc(j.uid)}')">Dismiss</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  window.dismissJob = async function(uid) {
+    try {
+      await fetch('/api/upwork/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid }),
+      });
+      // Remove from DOM immediately
+      const el = document.querySelector('[data-uid="' + uid + '"]');
+      if (el) el.remove();
+      const count = document.querySelectorAll('.upwork-job').length;
+      $('upwork-count').textContent = count;
+      if (count === 0) {
+        $('upwork-jobs').innerHTML = '<div class="upwork-empty"><div class="big">No pending jobs</div><div>Scanner runs every 30 minutes</div></div>';
+      }
+    } catch (e) {
+      alert('Dismiss failed: ' + e.message);
+    }
+  };
+
+  window.generateProposal = async function(uid, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    try {
+      await fetch('/api/upwork/generate-proposal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid }),
+      });
+      // Poll for result (generation takes up to 2 min)
+      btn.textContent = 'Waiting...';
+      let attempts = 0;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        if (attempts > 24) { // 2 min max
+          clearInterval(pollInterval);
+          btn.disabled = false;
+          btn.textContent = 'Generate Proposal';
+          return;
+        }
+        try {
+          const d = await fetch('/api/upwork/jobs').then(r => r.json());
+          const job = (d.jobs || []).find(j => j.uid === uid);
+          if (job && job.cover_letter) {
+            clearInterval(pollInterval);
+            renderUpwork(d);
+          }
+        } catch {}
+      }, 5000);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'Generate Proposal';
+      alert('Generate failed: ' + e.message);
+    }
+  };
+
+  window.saveProposal = async function(jobId, uid) {
+    const textarea = $('proposal-' + jobId);
+    if (!textarea) return;
+    const coverLetter = textarea.value.trim();
+    if (!coverLetter) return;
+
+    try {
+      await fetch('/api/upwork/proposal', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, coverLetter }),
+      });
+      // Flash the save button green briefly
+      const card = document.querySelector('[data-id="' + jobId + '"]');
+      if (card) {
+        const saveBtn = card.querySelector('.save');
+        if (saveBtn) {
+          saveBtn.textContent = 'Saved!';
+          setTimeout(() => { saveBtn.textContent = 'Save Edits'; }, 1500);
+        }
+      }
+    } catch (e) {
+      alert('Save failed: ' + e.message);
+    }
+  };
+
   // ── Periodic project refresh (SSE doesn't include projects to save bandwidth) ──
   setInterval(async () => {
     try {
@@ -711,6 +958,9 @@ header h1 span{color:var(--accent)}
       renderProjects(d);
     } catch {}
   }, 30000);
+
+  // Refresh Upwork jobs every 30s
+  setInterval(loadUpwork, 30000);
 
   // ── Boot ────────────────────────────────────────────────────
   loadAll();
