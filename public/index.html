@@ -163,6 +163,18 @@ header h1 span{color:var(--accent)}
 .upwork-btn.dismiss{background:none;border:1px solid var(--border);color:var(--dim)}
 .upwork-btn.dismiss:hover{border-color:var(--red);color:var(--red)}
 .upwork-btn:disabled{opacity:0.5;cursor:not-allowed}
+.upwork-btn.apply{background:var(--accent);color:#fff}
+.upwork-btn.apply:hover{opacity:0.9}
+.upwork-btn.apply.dry-run{background:none;border:2px dashed var(--yellow);color:var(--yellow)}
+.upwork-btn.apply.dry-run:hover{background:rgba(234,179,8,0.1)}
+.upwork-btn.apply.submitting{background:var(--yellow);color:#000;cursor:wait}
+.upwork-btn.apply.submitted{background:var(--green);color:#fff;cursor:default}
+.upwork-btn.apply.failed{background:var(--red);color:#fff}
+.upwork-dry-run-banner{background:rgba(234,179,8,0.1);border:1px dashed var(--yellow);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:14px;color:var(--yellow);display:none}
+.upwork-dry-run-banner.visible{display:block}
+.upwork-job.submitting{opacity:0.7}
+.upwork-job.applied{border-left-color:var(--green);opacity:0.6}
+.upwork-job.submit_failed{border-left-color:var(--red)}
 .upwork-screening{margin-top:8px;padding:8px 10px;background:var(--surface);border-radius:6px;font-size:13px;color:var(--dim)}
 .upwork-screening summary{cursor:pointer;color:var(--text);font-size:14px}
 .upwork-empty{text-align:center;padding:30px;color:var(--dim)}
@@ -236,6 +248,7 @@ header h1 span{color:var(--accent)}
         <span class="connects-age" id="connects-age"></span>
       </div>
     </div>
+    <div class="upwork-dry-run-banner" id="upwork-dry-run-banner">DRY-RUN MODE: Apply will navigate and fill forms but will NOT submit. Set upwork.dryRun: false in config.json to enable real submission.</div>
     <div class="upwork-jobs" id="upwork-jobs">
       <div class="no-data">Loading Upwork jobs...</div>
     </div>
@@ -776,6 +789,9 @@ header h1 span{color:var(--accent)}
     if (!d) return;
     const container = $('upwork-jobs');
     const jobs = d.jobs || [];
+    const isDryRun = d.dryRun || false;
+    const banner = $('upwork-dry-run-banner');
+    if (banner) banner.className = 'upwork-dry-run-banner' + (isDryRun ? ' visible' : '');
     $('upwork-count').textContent = jobs.length;
 
     // Connects balance
@@ -828,7 +844,14 @@ header h1 span{color:var(--accent)}
       // Proposal text
       const proposal = j.cover_letter || '';
       const hasProposal = proposal.length > 0;
-      const statusLabel = j.status === 'proposal_ready' ? 'Proposal ready' : hasProposal ? 'Draft' : 'No proposal';
+      let statusLabel;
+      if (j.status === 'applied') statusLabel = 'Applied';
+      else if (j.status === 'submitting') statusLabel = 'Submitting...';
+      else if (j.status === 'submit_failed') statusLabel = 'Submit failed';
+      else if (j.status === 'proposal_ready') statusLabel = 'Proposal ready';
+      else if (hasProposal) statusLabel = 'Draft';
+      else statusLabel = 'No proposal';
+      const statusClass = ['submitting','applied','submit_failed'].includes(j.status) ? ' ' + j.status : '';
 
       // Screening questions
       let screeningHtml = '';
@@ -842,7 +865,7 @@ header h1 span{color:var(--accent)}
         screeningAnswersHtml = '<details class="upwork-screening"><summary>Screening Answers</summary><pre style="white-space:pre-wrap;margin-top:6px">' + esc(j.proposal_screening_answers) + '</pre></details>';
       }
 
-      return `<div class="upwork-job ${scoreClass}" data-uid="${esc(j.uid)}" data-id="${j.id}">
+      return `<div class="upwork-job ${scoreClass}${statusClass}" data-uid="${esc(j.uid)}" data-id="${j.id}">
         <div class="upwork-job-header">
           <div class="upwork-job-title"><a href="${esc(j.url)}" target="_blank" rel="noopener">${esc(j.title)}</a></div>
           <span class="upwork-score ${scoreClass}">${score}</span>
@@ -861,7 +884,12 @@ header h1 span{color:var(--accent)}
           ${screeningAnswersHtml}
         </div>
         <div class="upwork-actions">
-          <button class="upwork-btn generate" onclick="generateProposal('${esc(j.uid)}', this)" ${hasProposal ? '' : ''}>Generate Proposal</button>
+          <button class="upwork-btn apply ${isDryRun ? 'dry-run' : ''}"
+            onclick="applyJob('${esc(j.uid)}', this)"
+            ${hasProposal && (j.status === 'new' || j.status === 'proposal_ready') ? '' : 'disabled'}>
+            ${isDryRun ? 'Dry-Run Apply' : 'Apply'}
+          </button>
+          <button class="upwork-btn generate" onclick="generateProposal('${esc(j.uid)}', this)">Generate Proposal</button>
           <button class="upwork-btn save" onclick="saveProposal(${j.id}, '${esc(j.uid)}')" ${hasProposal ? '' : 'disabled'}>Save Edits</button>
           <button class="upwork-btn dismiss" onclick="dismissJob('${esc(j.uid)}')">Dismiss</button>
         </div>
@@ -948,6 +976,76 @@ header h1 span{color:var(--accent)}
       }
     } catch (e) {
       alert('Save failed: ' + e.message);
+    }
+  };
+
+  window.applyJob = async function(uid, btn) {
+    const dryRun = btn.classList.contains('dry-run');
+    const confirmMsg = dryRun
+      ? 'Run a dry-run submission? (No Connects will be spent)'
+      : 'Submit this proposal to Upwork? This will spend Connects.';
+    if (!confirm(confirmMsg)) return;
+
+    btn.disabled = true;
+    btn.textContent = dryRun ? 'Dry-running...' : 'Submitting...';
+    btn.classList.add('submitting');
+
+    try {
+      const res = await fetch('/api/upwork/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        btn.disabled = false;
+        btn.textContent = dryRun ? 'Dry-Run Apply' : 'Apply';
+        btn.classList.remove('submitting');
+        alert('Submit failed: ' + (data.error || 'Unknown error'));
+        return;
+      }
+
+      btn.textContent = data.dryRun ? 'Dry-running...' : 'Submitting...';
+      let attempts = 0;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        if (attempts > 24) {
+          clearInterval(pollInterval);
+          btn.disabled = false;
+          btn.textContent = dryRun ? 'Dry-Run Apply' : 'Apply';
+          btn.classList.remove('submitting');
+          return;
+        }
+        try {
+          const d = await fetch('/api/upwork/jobs').then(r => r.json());
+          const job = (d.jobs || []).find(j => j.uid === uid);
+          if (job && job.status === 'applied') {
+            clearInterval(pollInterval);
+            btn.textContent = 'Applied!';
+            btn.classList.remove('submitting');
+            btn.classList.add('submitted');
+            setTimeout(() => loadUpwork(), 2000);
+          } else if (job && job.status === 'submit_failed') {
+            clearInterval(pollInterval);
+            btn.textContent = 'Failed';
+            btn.classList.remove('submitting');
+            btn.classList.add('failed');
+            btn.disabled = false;
+            setTimeout(() => {
+              btn.textContent = dryRun ? 'Dry-Run Apply' : 'Apply';
+              btn.classList.remove('failed');
+            }, 3000);
+          } else if (!job) {
+            clearInterval(pollInterval);
+            renderUpwork(d);
+          }
+        } catch {}
+      }, 5000);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = dryRun ? 'Dry-Run Apply' : 'Apply';
+      btn.classList.remove('submitting');
+      alert('Error: ' + e.message);
     }
   };
 

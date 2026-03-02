@@ -223,6 +223,7 @@
     ],
     "authStateMaxAgeMs": 43200000,
     "rateFloorHourly": 40,
-    "requirePaymentVerified": true
+    "requirePaymentVerified": true,
+    "dryRun": true
   }
 }

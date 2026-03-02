@@ -29,6 +29,7 @@ const EmailDigest = require("./lib/email-digest");
 const UpworkScanner = require("./lib/upwork-scanner");
 const UpworkDB = require("./lib/upwork-db");
 const UpworkProposals = require("./lib/upwork-proposals");
+const UpworkSubmitter = require("./lib/upwork-submitter");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -99,6 +100,12 @@ upworkScanner.init().catch(e => log("UPWORK", `Browser init error: ${e.message}`
 const upworkDb = new UpworkDB(orchestratorDb);
 upworkDb.ensureSchema();
 const upworkProposals = new UpworkProposals({ db: upworkDb, log: (msg) => log("UPWORK", msg) });
+const upworkSubmitter = new UpworkSubmitter({
+  scanner: upworkScanner,
+  db: upworkDb,
+  messenger,
+  config: CONFIG,
+});
 
 // ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
 const contextAssembler = new ContextAssembler({
@@ -153,7 +160,7 @@ const commands = new CommandRouter({
 const webServer = new WebServer({
   scanner, healthMonitor, sessionManager, aiBrain, state,
   resourceMonitor, revenueTracker, trustTracker, commands, config: CONFIG, scheduler, scanDb,
-  upworkDb, upworkProposals,
+  upworkDb, upworkProposals, upworkSubmitter,
 });
 webServer.start().catch(err => log("WEB", `Failed to start: ${err.message}`));
 
@@ -436,6 +443,35 @@ async function evaluateSession(projectName) {
   }
 }
 
+// ── Terminal output cleaning ─────────────────────────────────────────────────
+/**
+ * Strip terminal noise from tmux capture output, returning just the meaningful text.
+ * Removes ANSI codes, box-drawing chars, Claude Code UI chrome, empty lines.
+ */
+function cleanTerminalOutput(raw) {
+  if (!raw) return "";
+  let text = raw
+    // Strip ANSI escape codes
+    .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")
+    .replace(/\x1b\][^\x07]*\x07/g, "")
+    // Strip box-drawing characters (─ │ ┌ ┐ └ ┘ etc)
+    .replace(/[─━│┃┌┐└┘├┤┬┴┼╋╭╮╯╰═║╔╗╚╝╠╣╦╩╬]+/g, "")
+    // Strip Claude Code UI elements
+    .replace(/⏵+\s*bypass permissions[^\n]*/gi, "")
+    .replace(/\(shift\+tab to cycle\)/gi, "")
+    .replace(/❯\s*/g, "")
+    // Collapse whitespace
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{2,}/g, "\n");
+
+  // Split into lines and filter out empty/whitespace-only
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+
+  // Return last meaningful line (usually the last command/output), capped at 120 chars
+  const lastLine = lines[lines.length - 1] || "";
+  return lastLine.substring(0, 120);
+}
+
 // ── Session timeout enforcement ──────────────────────────────────────────────
 function checkSessionTimeouts() {
   const maxDurationMs = CONFIG.ai?.maxSessionDurationMs || 2700000; // 45 min default
@@ -455,17 +491,17 @@ function checkSessionTimeouts() {
         let lastOutput = "";
         try {
           const rawOutput = require("child_process").execSync(
-            `tmux capture-pane -t "${session.name}" -p 2>/dev/null | tail -5`,
+            `tmux capture-pane -t "${session.name}" -p 2>/dev/null | tail -10`,
             { encoding: "utf-8", timeout: 5000 }
           );
-          lastOutput = rawOutput.trim().substring(0, 300);
+          lastOutput = cleanTerminalOutput(rawOutput);
         } catch {}
 
         // Stop the session
         const result = sessionManager.stopSession(session.projectName);
 
         // Notify via notificationManager (tier 2 = action needed)
-        const notification = `Session ${session.projectName} timed out after ${durationMin}min.${lastOutput ? "\n\nLast output:\n" + lastOutput : ""}`;
+        const notification = `Session ${session.projectName} timed out (${durationMin}min).${lastOutput ? " Last: " + lastOutput : ""}`;
 
         if (notificationManager) {
           notificationManager.notify(notification, 2);
@@ -560,6 +596,7 @@ console.log(`║  Health:    ${(CONFIG.health?.enabled ? CONFIG.health.services.
 console.log(`║  Revenue:  ${(CONFIG.revenue?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
 console.log(`║  Trust:    ${(CONFIG.trust?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
 console.log(`║  Reminders: ${(CONFIG.reminders?.enabled !== false ? 'enabled' : 'disabled').padEnd(33)}║`);
+console.log(`║  Upwork:    ${(CONFIG.upwork?.enabled ? 'enabled' + (CONFIG.upwork.dryRun ? ' (DRY-RUN)' : '') : 'disabled').padEnd(33)}║`);
 console.log(`║  Web:       ${'http://127.0.0.1:8051'.padEnd(33)}║`);
 console.log("╚═══════════════════════════════════════════════╝");
 console.log("");
