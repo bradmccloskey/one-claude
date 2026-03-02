@@ -32,6 +32,10 @@
         <string>/Users/claude/.nvm/versions/node/v25.6.1/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
         <key>HOME</key>
         <string>/Users/claude</string>
+        <key>UPWORK_EMAIL</key>
+        <string>brad.mccloskey@gmail.com</string>
+        <key>UPWORK_PASSWORD</key>
+        <string>REPLACE_ME</string>
     </dict>
 
     <key>ThrottleInterval</key>

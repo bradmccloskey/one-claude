@@ -104,6 +104,7 @@ const upworkSubmitter = new UpworkSubmitter({
   scanner: upworkScanner,
   db: upworkDb,
   messenger,
+  notificationManager,
   config: CONFIG,
 });
 
