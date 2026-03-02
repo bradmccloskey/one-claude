@@ -5,3 +5,4 @@ priorities.json
 orchestrator.db
 .keychain-password
 .auth-token
+.upwork-auth.json
