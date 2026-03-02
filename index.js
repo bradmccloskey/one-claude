@@ -26,6 +26,7 @@ const SessionLearner = require("./lib/session-learner");
 const WebServer = require("./lib/web-server");
 const ScanDB = require("./lib/scan-db");
 const EmailDigest = require("./lib/email-digest");
+const UpworkScanner = require("./lib/upwork-scanner");
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
@@ -82,6 +83,15 @@ const reminderManager = new ReminderManager({ config: CONFIG, notificationManage
 
 // ── Conversation Store (v4.0 Phase 07) ───────────────────────────────────────
 const conversationStore = new ConversationStore();
+
+// ── Upwork Scanner (Phase 1) ─────────────────────────────────────────────────
+const Database = require("better-sqlite3");
+const ORCHESTRATOR_DB_PATH = path.join(__dirname, "orchestrator.db");
+const orchestratorDb = new Database(ORCHESTRATOR_DB_PATH);
+orchestratorDb.pragma("journal_mode = WAL");
+
+const upworkScanner = new UpworkScanner({ db: orchestratorDb, messenger, config: CONFIG });
+upworkScanner.init().catch(e => log("UPWORK", `Browser init error: ${e.message}`));
 
 // ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
 const contextAssembler = new ContextAssembler({
@@ -592,6 +602,23 @@ if (CONFIG.trust?.enabled && CONFIG.trust?.promotionCheckEnabled !== false) {
   );
 }
 
+// Upwork scanner cron (30 min)
+if (CONFIG.upwork?.enabled) {
+  require('node-cron').schedule(
+    CONFIG.upwork.pollCron || '*/30 * * * *',
+    async () => {
+      try {
+        const result = await upworkScanner.poll();
+        log('UPWORK', `Scan: found=${result.found}, filtered=${result.filtered}, inserted=${result.inserted}`);
+      } catch (e) {
+        log('UPWORK', `Scan error: ${e.message}`);
+      }
+    },
+    { timezone: CONFIG.quietHours?.timezone || 'America/New_York' }
+  );
+  log('UPWORK', 'Scanner cron scheduled (*/30 * * * *)');
+}
+
 // Start polling loops
 const msgInterval = setInterval(pollMessages, CONFIG.pollIntervalMs);
 let scanCount = 0;
@@ -754,6 +781,8 @@ function shutdown(signal) {
   reminderManager.close();
   sessionLearner.close();
   conversationStore.close();
+  upworkScanner.close().catch(() => {});
+  orchestratorDb.close();
   process.exit(0);
 }
 
