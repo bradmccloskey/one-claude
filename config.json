@@ -210,5 +210,19 @@
     "enabled": true,
     "minEvaluations": 50,
     "analysisInterval": 10
+  },
+  "upwork": {
+    "enabled": true,
+    "pollCron": "*/30 * * * *",
+    "searches": [
+      "https://www.upwork.com/nx/search/jobs/?q=claude+automation&sort=recency&job_type=hourly",
+      "https://www.upwork.com/nx/search/jobs/?q=playwright+automation&sort=recency&job_type=hourly",
+      "https://www.upwork.com/nx/search/jobs/?q=n8n+automation&sort=recency&job_type=hourly",
+      "https://www.upwork.com/nx/search/jobs/?q=AI+automation+agency&sort=recency&job_type=hourly",
+      "https://www.upwork.com/nx/search/jobs/?q=web+scraping+python&sort=recency&job_type=hourly"
+    ],
+    "authStateMaxAgeMs": 43200000,
+    "rateFloorHourly": 40,
+    "requirePaymentVerified": true
   }
 }
