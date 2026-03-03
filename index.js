@@ -693,8 +693,9 @@ if (CONFIG.upwork?.enabled) {
               log('UPWORK', `Auto-apply skipped: daily limit reached (${dailyCount}/${autoApply.maxDaily})`);
             } else {
               const connects = upworkDb.getConnectsBalance();
-              if (connects.balance !== null && connects.balance < autoApply.connectsFloor) {
-                log('UPWORK', `Auto-apply skipped: connects below floor (${connects.balance}/${autoApply.connectsFloor})`);
+              let currentBalance = connects.balance;
+              if (currentBalance !== null && currentBalance < autoApply.connectsFloor) {
+                log('UPWORK', `Auto-apply skipped: connects below floor (${currentBalance}/${autoApply.connectsFloor})`);
               } else {
                 const readyJobs = upworkDb.getPendingJobs(10).filter(
                   j => j.status === 'proposal_ready' && j.cover_letter && (j.match_score || 0) >= autoApply.threshold
@@ -702,17 +703,26 @@ if (CONFIG.upwork?.enabled) {
                 const remaining = autoApply.maxDaily - dailyCount;
                 const toApply = readyJobs.slice(0, remaining);
                 for (const job of toApply) {
-                  log('UPWORK', `Auto-applying to ${job.uid} (score ${job.match_score})`);
+                  // Pre-check connects before each submission (prevents overspend in batch)
+                  const connectsCost = 16; // typical Upwork connects cost per application
+                  if (currentBalance !== null && currentBalance < autoApply.connectsFloor) {
+                    log('UPWORK', `Auto-apply stopped: connects would drop below floor (${currentBalance} remaining)`);
+                    break;
+                  }
+                  log('UPWORK', `Auto-applying to ${job.uid} (score ${job.match_score}, connects: ${currentBalance})`);
                   upworkDb.updateJobStatus(job.uid, 'submitting', 'auto_applied');
+                  // Decrement balance estimate immediately to prevent overspend
+                  if (currentBalance !== null) currentBalance -= connectsCost;
                   upworkSubmitter.submitJob(job, {
                     coverLetter: job.cover_letter,
                     screeningAnswers: job.proposal_screening_answers || null,
                   }).then(r => {
                     if (r.success) {
-                      // Tag as auto-applied for daily count tracking
                       upworkDb.updateJobStatus(job.uid, 'applied', 'auto_applied');
+                      const rateText = job.rate_max ? `$${job.rate_max}/hr` : (job.budget ? `$${job.budget} fixed` : '');
+                      const spent = r.connectsSpent || connectsCost;
                       notificationManager.notify(
-                        `UPWORK AUTO-APPLIED\n${job.title}\nScore: ${job.match_score}%`,
+                        `UPWORK AUTO-APPLIED\n${job.title} ${rateText}\nScore: ${job.match_score}% | Connects: -${spent}`,
                         NotificationManager.ACTION
                       );
                     }
