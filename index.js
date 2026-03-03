@@ -1,424 +1,129 @@
-const fs = require("fs");
-const path = require("path");
+/**
+ * ONE Claude v4.0 — Persistent Brain Architecture
+ *
+ * The Node.js process is the "nervous system" — handling SMS I/O, background
+ * crons, and health monitoring. The "brain" is a persistent Claude Code session
+ * running in tmux, accessible via both SMS and SSH.
+ *
+ * Architecture:
+ *   launchd → node index.js
+ *     ├── ClaudeSession (tmux "one-claude")
+ *     ├── SMSBridge (iMessage ↔ Claude)
+ *     └── Background Crons (health, scans, Upwork, revenue, etc.)
+ */
 
-const StateManager = require("./lib/state");
-const ProjectScanner = require("./lib/scanner");
-const ProcessMonitor = require("./lib/process-monitor");
-const Messenger = require("./lib/messenger");
-const DigestFormatter = require("./lib/digest");
-const Scheduler = require("./lib/scheduler");
-const CommandRouter = require("./lib/commands");
-const SessionManager = require("./lib/session-manager");
-const { SignalProtocol } = require("./lib/signal-protocol");
-const ContextAssembler = require("./lib/context-assembler");
-const AIBrain = require("./lib/ai-brain");
-const DecisionExecutor = require("./lib/decision-executor");
-const NotificationManager = require("./lib/notification-manager");
-const ConversationStore = require("./lib/conversation-store");
-const GitTracker = require("./lib/git-tracker");
-const ResourceMonitor = require("./lib/resource-monitor");
-const HealthMonitor = require("./lib/health-monitor");
-const { SessionEvaluator } = require("./lib/session-evaluator");
-const RevenueTracker = require("./lib/revenue-tracker");
-const TrustTracker = require("./lib/trust-tracker");
-const ReminderManager = require("./lib/reminder-manager");
-const SessionLearner = require("./lib/session-learner");
-const WebServer = require("./lib/web-server");
-const ScanDB = require("./lib/scan-db");
-const EmailDigest = require("./lib/email-digest");
-const UpworkScanner = require("./lib/upwork-scanner");
-const UpworkDB = require("./lib/upwork-db");
-const UpworkProposals = require("./lib/upwork-proposals");
-const UpworkSubmitter = require("./lib/upwork-submitter");
+const fs = require('fs');
+const path = require('path');
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const CONFIG = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "config.json"), "utf-8")
+  fs.readFileSync(path.join(__dirname, 'config.json'), 'utf-8')
 );
 
-// ── Initialize modules ──────────────────────────────────────────────────────
+// ── Utility ─────────────────────────────────────────────────────────────────
+function log(tag, msg) {
+  console.log(`[${new Date().toISOString()}] [${tag}] ${msg}`);
+}
+
+// ── Initialize kept modules ─────────────────────────────────────────────────
+const StateManager = require('./lib/state');
+const ProjectScanner = require('./lib/scanner');
+const ProcessMonitor = require('./lib/process-monitor');
+const Messenger = require('./lib/messenger');
+const Scheduler = require('./lib/scheduler');
+const SessionManager = require('./lib/session-manager');
+const { SignalProtocol } = require('./lib/signal-protocol');
+const GitTracker = require('./lib/git-tracker');
+const ResourceMonitor = require('./lib/resource-monitor');
+const NotificationManager = require('./lib/notification-manager');
+const HealthMonitor = require('./lib/health-monitor');
+const { SessionEvaluator } = require('./lib/session-evaluator');
+const RevenueTracker = require('./lib/revenue-tracker');
+const TrustTracker = require('./lib/trust-tracker');
+const ReminderManager = require('./lib/reminder-manager');
+const SessionLearner = require('./lib/session-learner');
+const ScanDB = require('./lib/scan-db');
+const EmailDigest = require('./lib/email-digest');
+const UpworkScanner = require('./lib/upwork-scanner');
+const UpworkDB = require('./lib/upwork-db');
+const UpworkProposals = require('./lib/upwork-proposals');
+const UpworkSubmitter = require('./lib/upwork-submitter');
+
+// ── v4.0: Persistent Brain ─────────────────────────────────────────────────
+const ClaudeSession = require('./lib/claude-session');
+const SMSBridge = require('./lib/sms-bridge');
+
 const state = new StateManager();
 const scanDb = new ScanDB();
 const scanner = new ProjectScanner(CONFIG.projectsDir, CONFIG.projects, { scanDb });
 const processMonitor = new ProcessMonitor(CONFIG.projectsDir, CONFIG.idleThresholdMinutes);
 const messenger = new Messenger(CONFIG);
-const digest = new DigestFormatter();
 const scheduler = new Scheduler(CONFIG);
 const sessionManager = new SessionManager(CONFIG);
 const signalProtocol = new SignalProtocol(CONFIG.projectsDir);
 const gitTracker = new GitTracker();
 const resourceMonitor = new ResourceMonitor();
-
-// ── Session Learner (v4.0 Phase 07) ─────────────────────────────────────────
 const sessionLearner = new SessionLearner({ config: CONFIG });
 
-// ── Session Evaluator ────────────────────────────────────────────────────────
 const sessionEvaluator = new SessionEvaluator({
-  gitTracker,
-  state,
-  config: CONFIG,
-  sessionLearner,
+  gitTracker, state, config: CONFIG, sessionLearner,
 });
 
-// ── Notifications ────────────────────────────────────────────────────────────
 const notificationManager = new NotificationManager({
-  messenger,
-  config: CONFIG,
-  scheduler,
+  messenger, config: CONFIG, scheduler,
 });
 notificationManager.startBatchTimer();
 
-// ── Health Monitor (v4.0 Phase 05) ──────────────────────────────────────────
 const healthMonitor = new HealthMonitor({
-  config: CONFIG,
-  notificationManager,
-  state,
+  config: CONFIG, notificationManager, state,
 });
 
-// ── Revenue Tracker (v4.0 Phase 06) ─────────────────────────────────────────
 const revenueTracker = new RevenueTracker({ config: CONFIG });
-
-// ── Trust Tracker (v4.0 Phase 06) ───────────────────────────────────────────
 const trustTracker = new TrustTracker({ config: CONFIG, state });
-
-// ── Reminder Manager (v4.0 Phase 07) ────────────────────────────────────────
 const reminderManager = new ReminderManager({ config: CONFIG, notificationManager });
 
-// ── Conversation Store (v4.0 Phase 07) ───────────────────────────────────────
-const conversationStore = new ConversationStore();
-
-// ── Upwork Scanner (Phase 1) ─────────────────────────────────────────────────
-const Database = require("better-sqlite3");
-const ORCHESTRATOR_DB_PATH = path.join(__dirname, "orchestrator.db");
+// ── Upwork Stack ────────────────────────────────────────────────────────────
+const Database = require('better-sqlite3');
+const ORCHESTRATOR_DB_PATH = path.join(__dirname, 'orchestrator.db');
 const orchestratorDb = new Database(ORCHESTRATOR_DB_PATH);
-orchestratorDb.pragma("journal_mode = WAL");
+orchestratorDb.pragma('journal_mode = WAL');
 
 const upworkScanner = new UpworkScanner({ db: orchestratorDb, messenger, config: CONFIG });
-upworkScanner.init().catch(e => log("UPWORK", `Browser init error: ${e.message}`));
+upworkScanner.init().catch(e => log('UPWORK', `Browser init error: ${e.message}`));
 
-// Phase 2: Shared UpworkDB instance + Proposal engine
 const upworkDb = new UpworkDB(orchestratorDb);
 upworkDb.ensureSchema();
-const upworkProposals = new UpworkProposals({ db: upworkDb, log: (msg) => log("UPWORK", msg) });
+const upworkProposals = new UpworkProposals({ db: upworkDb, log: (msg) => log('UPWORK', msg) });
 const upworkSubmitter = new UpworkSubmitter({
-  scanner: upworkScanner,
-  db: upworkDb,
-  messenger,
-  notificationManager,
-  config: CONFIG,
+  scanner: upworkScanner, db: upworkDb, messenger, notificationManager, config: CONFIG,
 });
 
-// ── AI Brain (v3.0) ─────────────────────────────────────────────────────────
-const contextAssembler = new ContextAssembler({
-  scanner,
-  sessionManager,
-  processMonitor,
-  state,
-  config: CONFIG,
-  resourceMonitor,
-  healthMonitor,
-  revenueTracker,
-  trustTracker,
-  conversationStore,
-  sessionLearner,
-});
-
-const decisionExecutor = new DecisionExecutor({
-  sessionManager,
-  messenger,
-  notificationManager,
-  signalProtocol,
-  state,
-  config: CONFIG,
-});
-
-const aiBrain = new AIBrain({
-  contextAssembler,
-  decisionExecutor,
-  state,
-  messenger,
-  config: CONFIG,
-});
-
-const commands = new CommandRouter({
-  scanner,
-  processMonitor,
-  digest,
-  scheduler,
-  sessionManager,
-  signalProtocol,
-  state,
-  projectNames: CONFIG.projects,
-  aiBrain,
-  decisionExecutor,
-  messenger,
-  conversationStore,
-  reminderManager,
-  trustTracker,
-});
-
-// ── Web Dashboard ───────────────────────────────────────────────────────────
-const webServer = new WebServer({
-  scanner, healthMonitor, sessionManager, aiBrain, state,
-  resourceMonitor, revenueTracker, trustTracker, commands, config: CONFIG, scheduler, scanDb,
-  upworkDb, upworkProposals, upworkSubmitter,
-});
-webServer.start().catch(err => log("WEB", `Failed to start: ${err.message}`));
-
-// ── Email Digest (ported from project-dashboard) ─────────────────────────────
+// ── Email Digest ────────────────────────────────────────────────────────────
 const emailDigest = new EmailDigest({ scanner, healthMonitor, sessionManager, scanDb });
 
-// ── Utility ─────────────────────────────────────────────────────────────────
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// ── v4.0: Claude Session + SMS Bridge ───────────────────────────────────────
+const claudeSession = new ClaudeSession({
+  config: CONFIG, log, notificationManager,
+});
 
-function log(tag, msg) {
-  console.log(`[${new Date().toISOString()}] [${tag}] ${msg}`);
-}
+const smsBridge = new SMSBridge({
+  messenger, claudeSession, state, config: CONFIG, log,
+});
 
-// ── Send morning digest ─────────────────────────────────────────────────────
-async function sendDigest() {
-  try {
-    // Send email digest (runs independently of SMS digest)
-    emailDigest.send().catch(e => log("EMAIL", `Email digest error: ${e.message}`));
-
-    // Try AI-generated digest first
-    if (aiBrain.isEnabled()) {
-      log("DIGEST", "Generating AI digest...");
-      const aiDigest = await aiBrain.generateDigest();
-      if (aiDigest) {
-        messenger.send(aiDigest);
-        const s = state.load();
-        s.lastDigest = new Date().toISOString();
-        state.save(s);
-        log("DIGEST", "Sent AI-generated morning digest");
-        return;
-      }
-      log("DIGEST", "AI digest failed, falling back to template");
-    }
-
-    // Fallback to template digest
-    const projects = scanner.scanAll();
-    const processStatus = processMonitor.checkProjects(CONFIG.projects);
-    const text = digest.formatMorningDigest(projects, processStatus);
-    messenger.send(text);
-    const s = state.load();
-    s.lastDigest = new Date().toISOString();
-    state.save(s);
-    log("DIGEST", "Sent template morning digest");
-  } catch (e) {
-    log("DIGEST", `Error: ${e.message}`);
-  }
-}
-
-// ── Send evening wind-down digest ────────────────────────────────────────────
-async function sendEveningDigest() {
-  try {
-    const { claudePWithSemaphore } = require('./lib/exec');
-
-    // Gather today's data
-    const stateData = state.load();
-    const today = new Date().toISOString().split('T')[0];
-    const todayExecs = (stateData.executionHistory || []).filter(e =>
-      e.timestamp && e.timestamp.startsWith(today)
-    );
-    const todayEvals = (stateData.evaluationHistory || []).filter(e =>
-      e.evaluatedAt && e.evaluatedAt.startsWith(today)
-    );
-
-    // Get commits across all projects today
-    const commitSummaries = [];
-    for (const projectName of CONFIG.projects) {
-      try {
-        const projectDir = path.join(CONFIG.projectsDir, projectName);
-        const progress = gitTracker.getProgress(projectDir, '24 hours ago');
-        if (progress.commitCount > 0) {
-          commitSummaries.push(`${projectName}: ${progress.commitCount} commits (+${progress.insertions}/-${progress.deletions})`);
-        }
-      } catch {}
-    }
-
-    const prompt = [
-      'You are the AI brain of a project orchestrator. Generate a concise evening wind-down digest SMS (max 500 chars).',
-      '',
-      `Date: ${today}`,
-      '',
-      `Sessions today: ${todayExecs.filter(e => e.action === 'start').length} started`,
-      `Evaluations today: ${todayEvals.length} (avg score: ${todayEvals.length > 0 ? (todayEvals.reduce((s, e) => s + (e.score || 0), 0) / todayEvals.length).toFixed(1) : 'N/A'})`,
-      '',
-      'Commits today:',
-      commitSummaries.length > 0 ? commitSummaries.join('\n') : 'None',
-      '',
-      'Summarize the day\'s accomplishments and suggest what to focus on tomorrow. Be brief and actionable.',
-    ].join('\n');
-
-    const digest = await claudePWithSemaphore(prompt, { maxTurns: 1 });
-    if (digest) {
-      messenger.send(digest.substring(0, 1500));
-      log('DIGEST', 'Sent evening wind-down digest');
-    }
-  } catch (e) {
-    log('DIGEST', `Evening digest error: ${e.message}`);
-  }
-}
-
-// ── Send weekly revenue summary ─────────────────────────────────────────────
-async function sendWeeklyRevenueSummary() {
-  try {
-    const trend = revenueTracker.getWeeklyTrend();
-    const latest = revenueTracker.getLatest();
-
-    const lines = ['Weekly Revenue Summary:'];
-    lines.push('');
-
-    // XMR Mining section
-    lines.push('XMR Mining:');
-    const xmr = latest['xmr-mining'];
-    if (xmr && xmr.balance_atomic !== null) {
-      const balXMR = (xmr.balance_atomic / 1e12).toFixed(6);
-      const balUSD = xmr.xmr_price_usd ? (xmr.balance_atomic / 1e12 * xmr.xmr_price_usd).toFixed(2) : '?';
-      lines.push(`  Balance: ${balXMR} XMR ($${balUSD})`);
-      lines.push(`  Hashrate: ${xmr.hashrate || 0} H/s`);
-    } else {
-      lines.push('  No data available');
-    }
-
-    if (trend.thisWeek.xmr) {
-      const tw = trend.thisWeek.xmr;
-      lines.push(`  This week: ${tw.changeXMR >= 0 ? '+' : ''}${tw.changeXMR.toFixed(6)} XMR ($${tw.changeUSD.toFixed(2)})`);
-      if (trend.lastWeek.xmr) {
-        const lw = trend.lastWeek.xmr;
-        const pctChange = lw.changeUSD !== 0
-          ? Math.round((tw.changeUSD - lw.changeUSD) / Math.abs(lw.changeUSD) * 100)
-          : null;
-        lines.push(`  WoW: ${pctChange !== null ? (pctChange >= 0 ? '+' : '') + pctChange + '%' : 'N/A (first week)'}`);
-      } else {
-        lines.push('  WoW: N/A (first week)');
-      }
-    }
-
-    lines.push('');
-
-    // MLX API section
-    lines.push('MLX API:');
-    if (trend.thisWeek.mlx) {
-      lines.push(`  Requests this week: ${trend.thisWeek.mlx.requests}`);
-    } else {
-      lines.push('  No data available');
-    }
-    lines.push('  Revenue: $0.00 (no active subscribers)');
-
-    messenger.send(lines.join('\n'));
-    log('REVENUE', 'Sent weekly revenue summary');
-  } catch (e) {
-    log('REVENUE', `Weekly summary error: ${e.message}`);
-  }
-}
-
-// ── Proactive alert scan (STATE.md changes + signal files) ──────────────────
-let lastScanResults = {};
-let lastSignalState = {};
-
-function proactiveScan() {
-  if (scheduler.isQuietTime()) return;
-
-  try {
-    const s = state.load();
-
-    // 1. Scan STATE.md files for attention-needed changes
-    const projects = scanner.scanAll();
-
-    for (const project of projects) {
-      if (!project.needsAttention) continue;
-      if (commands.isPaused(project.name)) continue;
-      if (state.wasRecentlyAlerted(s, project.name)) continue;
-
-      const prevAttention = lastScanResults[project.name]?.needsAttention;
-      if (prevAttention) continue;
-
-      const processStatus = processMonitor.checkProjects([project.name]);
-      const detail = digest.formatProjectDetail(project, processStatus[project.name]);
-      messenger.send(`${project.name} needs attention:\n\n${detail}`);
-      commands.setContext(project.name, "needs-attention");
-      state.recordAlert(s, project.name, project.attentionReason);
-      log("ALERT", `Sent alert for ${project.name}: ${project.attentionReason}`);
-    }
-
-    lastScanResults = {};
-    for (const p of projects) {
-      lastScanResults[p.name] = { needsAttention: p.needsAttention };
-    }
-
-    // 2. Scan signal files from managed Claude sessions
-    const signals = signalProtocol.scanSignals(CONFIG.projects);
-
-    for (const signal of signals) {
-      const signalKey = `${signal.projectName}:${signal.type}`;
-      if (lastSignalState[signalKey]) continue; // Already notified
-      if (commands.isPaused(signal.projectName)) continue;
-
-      const notification = signalProtocol.formatSignalNotification(signal);
-      messenger.send(notification);
-      commands.setContext(signal.projectName, signal.type);
-      lastSignalState[signalKey] = true;
-      log("SIGNAL", `${signal.type} from ${signal.projectName} (set context)`);
-
-      // Archive the signal after notifying
-      signalProtocol.clearSignal(signal.projectName, signal.type);
-    }
-
-    // Clean up cleared signals from tracking
-    const activeSignalKeys = new Set(signals.map((s) => `${s.projectName}:${s.type}`));
-    for (const key of Object.keys(lastSignalState)) {
-      if (!activeSignalKeys.has(key)) delete lastSignalState[key];
-    }
-
-    // 3. Check for ended sessions (tmux session gone but was running)
-    const sessions = sessionManager.getSessionStatuses();
-    for (const session of sessions) {
-      if (session.ended && !lastSignalState[`${session.projectName}:ended`]) {
-        const lastOutput = session.lastOutput || "No output captured";
-        messenger.send(
-          `${session.projectName} session ended.\n\nLast output:\n${lastOutput}`
-        );
-        commands.setContext(session.projectName, "ended");
-        lastSignalState[`${session.projectName}:ended`] = true;
-        log("SESSION", `Session ended for ${session.projectName}`);
-
-        // Trigger evaluation for ended session
-        evaluateSession(session.projectName);
-      }
-    }
-
-    s.lastScan = new Date().toISOString();
-    state.save(s);
-  } catch (e) {
-    log("SCAN", `Error: ${e.message}`);
-  }
-}
-
-// ── Session evaluation ───────────────────────────────────────────────────────
+// ── Session Evaluation ──────────────────────────────────────────────────────
 async function evaluateSession(projectName) {
   try {
     const projectDir = path.join(CONFIG.projectsDir, projectName);
     const sessionFile = path.join(projectDir, '.orchestrator', 'session.json');
-    if (!fs.existsSync(sessionFile)) {
-      log('EVAL', `No session.json for ${projectName}, skipping evaluation`);
-      return;
-    }
+    if (!fs.existsSync(sessionFile)) return;
 
     const sessionData = JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
 
-    // Skip if already evaluated (check if evaluation.json is newer than session start)
     const evalFile = path.join(projectDir, '.orchestrator', 'evaluation.json');
     if (fs.existsSync(evalFile)) {
       try {
         const existingEval = JSON.parse(fs.readFileSync(evalFile, 'utf-8'));
-        if (new Date(existingEval.evaluatedAt) > new Date(sessionData.startedAt)) {
-          log('EVAL', `${projectName} already evaluated, skipping`);
-          return;
-        }
+        if (new Date(existingEval.evaluatedAt) > new Date(sessionData.startedAt)) return;
       } catch {}
     }
 
@@ -434,210 +139,227 @@ async function evaluateSession(projectName) {
 
     log('EVAL', `${projectName}: score=${evaluation.score}/5, recommendation=${evaluation.recommendation}`);
 
-    // Notify user if score is low (escalation)
     if (evaluation.score <= 2) {
-      const msg = `Session ${projectName} scored ${evaluation.score}/5: ${evaluation.reasoning.substring(0, 200)}`;
-      notificationManager.notify(msg, 2); // tier 2 = action needed
+      notificationManager.notify(
+        `Session ${projectName} scored ${evaluation.score}/5: ${evaluation.reasoning.substring(0, 200)}`,
+        NotificationManager.URGENT
+      );
     }
   } catch (e) {
     log('EVAL', `Error evaluating ${projectName}: ${e.message}`);
   }
 }
 
-// ── Terminal output cleaning ─────────────────────────────────────────────────
-/**
- * Strip terminal noise from tmux capture output, returning just the meaningful text.
- * Removes ANSI codes, box-drawing chars, Claude Code UI chrome, empty lines.
- */
-function cleanTerminalOutput(raw) {
-  if (!raw) return "";
-  let text = raw
-    // Strip ANSI escape codes
-    .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")
-    .replace(/\x1b\][^\x07]*\x07/g, "")
-    // Strip box-drawing characters (─ │ ┌ ┐ └ ┘ etc)
-    .replace(/[─━│┃┌┐└┘├┤┬┴┼╋╭╮╯╰═║╔╗╚╝╠╣╦╩╬]+/g, "")
-    // Strip Claude Code UI elements
-    .replace(/⏵+\s*bypass permissions[^\n]*/gi, "")
-    .replace(/\(shift\+tab to cycle\)/gi, "")
-    .replace(/❯\s*/g, "")
-    // Collapse whitespace
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{2,}/g, "\n");
+// ── Proactive Scans (signals, sessions, STATE.md) ───────────────────────────
+let lastScanResults = {};
+let lastSignalState = {};
 
-  // Split into lines and filter out empty/whitespace-only
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+function proactiveScan() {
+  if (scheduler.isQuietTime()) return;
 
-  // Return last meaningful line (usually the last command/output), capped at 120 chars
-  const lastLine = lines[lines.length - 1] || "";
-  return lastLine.substring(0, 120);
+  try {
+    const s = state.load();
+    const projects = scanner.scanAll();
+
+    // 1. Scan STATE.md files for attention-needed changes
+    for (const project of projects) {
+      if (!project.needsAttention) continue;
+      if (state.wasRecentlyAlerted(s, project.name)) continue;
+      if (lastScanResults[project.name]?.needsAttention) continue;
+
+      // Inject into Claude session instead of direct SMS
+      if (claudeSession.isAlive()) {
+        claudeSession.sendInput(
+          `[SIGNAL] ${project.name} needs attention: ${project.attentionReason}`
+        );
+      }
+      state.recordAlert(s, project.name, project.attentionReason);
+      log('ALERT', `Injected alert for ${project.name}: ${project.attentionReason}`);
+    }
+
+    lastScanResults = {};
+    for (const p of projects) {
+      lastScanResults[p.name] = { needsAttention: p.needsAttention };
+    }
+
+    // 2. Scan signal files from managed child sessions
+    const signals = signalProtocol.scanSignals(CONFIG.projects);
+    for (const signal of signals) {
+      const signalKey = `${signal.projectName}:${signal.type}`;
+      if (lastSignalState[signalKey]) continue;
+
+      // Inject signal into Claude session
+      const notification = signalProtocol.formatSignalNotification(signal);
+      if (claudeSession.isAlive()) {
+        claudeSession.sendInput(`[SIGNAL] ${notification}`);
+      }
+      lastSignalState[signalKey] = true;
+      log('SIGNAL', `${signal.type} from ${signal.projectName} → injected into Claude session`);
+      signalProtocol.clearSignal(signal.projectName, signal.type);
+    }
+
+    // Clean up cleared signals
+    const activeSignalKeys = new Set(signals.map(s => `${s.projectName}:${s.type}`));
+    for (const key of Object.keys(lastSignalState)) {
+      if (!activeSignalKeys.has(key)) delete lastSignalState[key];
+    }
+
+    // 3. Check for ended child sessions
+    const sessions = sessionManager.getSessionStatuses();
+    for (const session of sessions) {
+      if (session.ended && !lastSignalState[`${session.projectName}:ended`]) {
+        if (claudeSession.isAlive()) {
+          claudeSession.sendInput(
+            `[SIGNAL] ${session.projectName} session ended. Last output: ${(session.lastOutput || 'none').substring(0, 200)}`
+          );
+        }
+        lastSignalState[`${session.projectName}:ended`] = true;
+        log('SESSION', `Session ended for ${session.projectName}`);
+        evaluateSession(session.projectName);
+      }
+    }
+
+    s.lastScan = new Date().toISOString();
+    state.save(s);
+  } catch (e) {
+    log('SCAN', `Error: ${e.message}`);
+  }
 }
 
-// ── Session timeout enforcement ──────────────────────────────────────────────
+// ── Session Timeout Enforcement ─────────────────────────────────────────────
 function checkSessionTimeouts() {
-  const maxDurationMs = CONFIG.ai?.maxSessionDurationMs || 2700000; // 45 min default
+  const maxDurationMs = CONFIG.ai?.maxSessionDurationMs || 5400000;
 
   try {
     const sessions = sessionManager.getActiveSessions();
-
     for (const session of sessions) {
       const startTime = new Date(session.created).getTime();
       const duration = Date.now() - startTime;
 
       if (duration > maxDurationMs) {
         const durationMin = Math.round(duration / 60000);
-        log("TIMEOUT", `Session ${session.projectName} exceeded ${Math.round(maxDurationMs / 60000)}min (running ${durationMin}min), stopping...`);
+        log('TIMEOUT', `Session ${session.projectName} exceeded ${Math.round(maxDurationMs / 60000)}min, stopping...`);
+        sessionManager.stopSession(session.projectName);
 
-        // Capture last output before stopping (best-effort)
-        let lastOutput = "";
-        try {
-          const rawOutput = require("child_process").execSync(
-            `tmux capture-pane -t "${session.name}" -p 2>/dev/null | tail -10`,
-            { encoding: "utf-8", timeout: 5000 }
-          );
-          lastOutput = cleanTerminalOutput(rawOutput);
-        } catch {}
+        const msg = `Session ${session.projectName} timed out (${durationMin}min).`;
+        notificationManager.notify(msg, NotificationManager.URGENT);
 
-        // Stop the session
-        const result = sessionManager.stopSession(session.projectName);
-
-        // Notify via notificationManager (tier 2 = action needed)
-        const notification = `Session ${session.projectName} timed out (${durationMin}min).${lastOutput ? " Last: " + lastOutput : ""}`;
-
-        if (notificationManager) {
-          notificationManager.notify(notification, 2);
-        } else {
-          messenger.send(notification);
+        // Inject into Claude so it knows
+        if (claudeSession.isAlive()) {
+          claudeSession.sendInput(`[SYSTEM] ${msg}`);
         }
-
-        log("TIMEOUT", `Stopped ${session.projectName}: ${result.message}`);
-
-        // Trigger evaluation asynchronously (don't block timeout processing)
         evaluateSession(session.projectName);
       }
     }
   } catch (e) {
-    log("TIMEOUT", `Error checking timeouts: ${e.message}`);
+    log('TIMEOUT', `Error: ${e.message}`);
   }
-}
-
-// ── Message polling ─────────────────────────────────────────────────────────
-let polling = false;
-
-async function pollMessages() {
-  if (polling) return;
-  polling = true;
-
-  try {
-    const s = state.load();
-
-    // First run - initialize to current position
-    if (s.lastRowId === 0) {
-      const latest = messenger.getLatestRowId();
-      if (latest) {
-        s.lastRowId = latest;
-        state.save(s);
-        log("INIT", `Starting from ROWID: ${s.lastRowId}`);
-      }
-      polling = false;
-      return;
-    }
-
-    const messages = messenger.getNewMessages(s.lastRowId);
-
-    for (const msg of messages) {
-      log("MSG", `Received: "${msg.text}" (ROWID: ${msg.ROWID})`);
-
-      const response = await commands.route(msg.text);
-      const preview = response.length > 80 ? response.substring(0, 80) + "..." : response;
-      log("REPLY", preview);
-
-      messenger.send(response);
-
-      // Wait for our sent message to land in DB, then skip past it
-      await sleep(2000);
-      const latest = messenger.getLatestRowId();
-      s.lastRowId = latest || Math.max(s.lastRowId, msg.ROWID);
-      state.save(s);
-    }
-  } catch (e) {
-    if (
-      e.message.includes("authorization denied") ||
-      e.message.includes("SQLITE_CANTOPEN")
-    ) {
-      console.error(
-        "\nCannot access Messages database!\n" +
-          "Grant Full Disk Access to your terminal app:\n" +
-          "  System Settings > Privacy & Security > Full Disk Access\n"
-      );
-      process.exit(1);
-    }
-    log("POLL", `Error: ${e.message}`);
-  }
-
-  polling = false;
 }
 
 // ── Startup ─────────────────────────────────────────────────────────────────
-console.log("╔═══════════════════════════════════════════════╗");
-console.log("║       Project Orchestrator v3.0               ║");
-console.log("╠═══════════════════════════════════════════════╣");
+console.log('╔═══════════════════════════════════════════════╗');
+console.log('║       ONE Claude v4.0 — Persistent Brain     ║');
+console.log('╠═══════════════════════════════════════════════╣');
 console.log(`║  Your #:    ${CONFIG.myNumber.padEnd(33)}║`);
 console.log(`║  Bot:       ${CONFIG.claudeNumber.padEnd(33)}║`);
 console.log(`║  Projects:  ${String(CONFIG.projects.length).padEnd(33)}║`);
-console.log(`║  Max sess:  ${String(CONFIG.maxConcurrentSessions || 5).padEnd(33)}║`);
-console.log(`║  Msg poll:  ${(CONFIG.pollIntervalMs + "ms").padEnd(33)}║`);
-console.log(`║  Scan:      ${(CONFIG.scanIntervalMs + "ms").padEnd(33)}║`);
-console.log(`║  Quiet:     ${(CONFIG.quietHours.start + "-" + CONFIG.quietHours.end).padEnd(33)}║`);
-console.log(`║  Digest:    ${CONFIG.morningDigest.cron.padEnd(33)}║`);
-const _bootState = state.load();
-const _bootLevel = state.getAutonomyLevel(_bootState, CONFIG);
-console.log(`║  AI:        ${(CONFIG.ai?.enabled ? "enabled (" + _bootLevel + ")" : "disabled").padEnd(33)}║`);
-console.log(`║  Health:    ${(CONFIG.health?.enabled ? CONFIG.health.services.length + " services" : "disabled").padEnd(33)}║`);
-console.log(`║  Revenue:  ${(CONFIG.revenue?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
-console.log(`║  Trust:    ${(CONFIG.trust?.enabled ? 'enabled' : 'disabled').padEnd(33)}║`);
-console.log(`║  Reminders: ${(CONFIG.reminders?.enabled !== false ? 'enabled' : 'disabled').padEnd(33)}║`);
+console.log(`║  Session:   ${(CONFIG.claudeSession?.sessionName || 'one-claude').padEnd(33)}║`);
+console.log(`║  Msg poll:  ${(CONFIG.pollIntervalMs + 'ms').padEnd(33)}║`);
+console.log(`║  Scan:      ${(CONFIG.scanIntervalMs + 'ms').padEnd(33)}║`);
+console.log(`║  Quiet:     ${(CONFIG.quietHours.start + '-' + CONFIG.quietHours.end).padEnd(33)}║`);
+console.log(`║  Health:    ${(CONFIG.health?.enabled ? CONFIG.health.services.length + ' services' : 'disabled').padEnd(33)}║`);
 console.log(`║  Upwork:    ${(CONFIG.upwork?.enabled ? 'enabled' + (CONFIG.upwork.dryRun ? ' (DRY-RUN)' : '') : 'disabled').padEnd(33)}║`);
-console.log(`║  Web:       ${'http://127.0.0.1:8051'.padEnd(33)}║`);
-console.log("╚═══════════════════════════════════════════════╝");
-console.log("");
+console.log('╚═══════════════════════════════════════════════╝');
+console.log('');
 
-// Run initial scan
-log("BOOT", "Running initial project scan...");
+// Run initial project scan
+log('BOOT', 'Running initial project scan...');
 const initialProjects = scanner.scanAll();
-const withState = initialProjects.filter((p) => p.hasState);
-const needAttention = initialProjects.filter((p) => p.needsAttention);
-log("BOOT", `${initialProjects.length} projects, ${withState.length} with state, ${needAttention.length} need attention`);
+const withState = initialProjects.filter(p => p.hasState);
+const needAttention = initialProjects.filter(p => p.needsAttention);
+log('BOOT', `${initialProjects.length} projects, ${withState.length} with state, ${needAttention.length} need attention`);
 
-for (const p of withState) {
-  const pct = p.progress != null ? `${p.progress}%` : "no %";
-  const status = p.status || "unknown";
-  log("BOOT", `  ${p.name}: ${status} (${pct})`);
-}
-
-// Check for existing tmux sessions from a previous run
+// Check for existing child tmux sessions
 const existingSessions = sessionManager.getActiveSessions();
 if (existingSessions.length > 0) {
-  log("BOOT", `Found ${existingSessions.length} existing session(s):`);
+  log('BOOT', `Found ${existingSessions.length} existing child session(s):`);
   for (const s of existingSessions) {
-    log("BOOT", `  ${s.projectName} (since ${s.created})`);
+    log('BOOT', `  ${s.projectName} (since ${s.created})`);
   }
 }
 
-// Start scheduled jobs
-scheduler.startMorningDigest(sendDigest);
-scheduler.startEveningDigest(sendEveningDigest);
-scheduler.startWeeklySummary(sendWeeklyRevenueSummary);
+// ── Start Claude Session ────────────────────────────────────────────────────
+log('BOOT', 'Starting ONE Claude session...');
+// Wait 5s for tmux to be ready
+setTimeout(() => {
+  const result = claudeSession.start();
+  log('BOOT', `Claude session: ${result.message}`);
+
+  // Start SMS bridge after Claude session is up
+  // Wait for Claude to fully boot (MCP servers, hooks, etc.)
+  setTimeout(() => {
+    smsBridge.start();
+    log('BOOT', 'SMS bridge started');
+  }, 15000);
+}, 5000);
+
+// ── Scheduled Jobs ──────────────────────────────────────────────────────────
+
+// Morning digest (7 AM) — inject into Claude session
+scheduler.startMorningDigest(async () => {
+  try {
+    emailDigest.send().catch(e => log('EMAIL', `Email digest error: ${e.message}`));
+
+    if (claudeSession.isAlive()) {
+      claudeSession.sendInput(
+        '[SYSTEM] It is 7 AM. Generate and send a morning digest SMS to Brad. ' +
+        'Run `node scripts/scan-projects.js --brief` and `node scripts/check-health.js` ' +
+        'to get current status, then compose a concise morning summary.'
+      );
+    }
+  } catch (e) {
+    log('DIGEST', `Morning digest error: ${e.message}`);
+  }
+});
+
+// Evening digest (9:45 PM)
+scheduler.startEveningDigest(async () => {
+  try {
+    if (claudeSession.isAlive()) {
+      claudeSession.sendInput(
+        '[SYSTEM] It is 9:45 PM. Generate and send an evening wind-down SMS to Brad. ' +
+        'Summarize today\'s accomplishments (check git logs across projects) ' +
+        'and suggest what to focus on tomorrow. Keep under 500 chars.'
+      );
+    }
+  } catch (e) {
+    log('DIGEST', `Evening digest error: ${e.message}`);
+  }
+});
+
+// Weekly revenue summary (Sunday 7 AM)
+scheduler.startWeeklySummary(async () => {
+  try {
+    if (claudeSession.isAlive()) {
+      claudeSession.sendInput(
+        '[SYSTEM] Weekly revenue summary due. Check XMR mining balance, ' +
+        'MLX API requests, and any other revenue data. Send a concise weekly summary SMS.'
+      );
+    }
+  } catch (e) {
+    log('REVENUE', `Weekly summary error: ${e.message}`);
+  }
+});
 
 // Daily trust promotion check (10 AM)
 if (CONFIG.trust?.enabled && CONFIG.trust?.promotionCheckEnabled !== false) {
-  const promotionJob = require('node-cron').schedule(
+  require('node-cron').schedule(
     CONFIG.trust.promotionCheckCron || '0 10 * * *',
     () => {
       try {
         const recommendation = trustTracker.checkPromotion();
         if (recommendation) {
-          notificationManager.notify(recommendation, 2); // tier 2 = action needed
+          notificationManager.notify(recommendation, NotificationManager.URGENT);
           log('TRUST', 'Promotion recommendation sent');
         }
       } catch (e) {
@@ -657,61 +379,47 @@ if (CONFIG.upwork?.enabled) {
         const result = await upworkScanner.poll();
         log('UPWORK', `Scan: found=${result.found}, filtered=${result.filtered}, inserted=${result.inserted}`);
 
-        // Auto-generate proposals only for high-score jobs (50+)
         if (result.inserted > 0) {
           const pending = upworkDb.getPendingJobs(10);
           const needsProposal = pending.filter(j => j.status === 'new' && !j.cover_letter && (j.match_score || 0) >= 50);
           for (const job of needsProposal) {
-            upworkProposals.generateAndSave(job); // intentionally not awaited
+            upworkProposals.generateAndSave(job);
           }
           if (needsProposal.length > 0) {
             log('UPWORK', `Queued ${needsProposal.length} proposal generation(s) (score >= 50)`);
           }
 
-          // INT-01: Notify for high-match jobs via iMessage
+          // Notify for high-match jobs
           const autoSettings = upworkDb.getAutoApplySettings();
           if (autoSettings.notifyHighMatch) {
             const highMatch = pending.filter(j => (j.match_score || 0) >= autoSettings.notifyThreshold);
             for (const job of highMatch) {
               const rate = job.rate_max ? `$${job.rate_max}/hr` : (job.budget ? `$${job.budget} fixed` : 'rate TBD');
               const msg = `UPWORK HIGH MATCH (${job.match_score}%)\n${job.title}\n${rate}\nhttps://www.upwork.com/jobs/~${job.uid}`;
-              notificationManager.notify(msg, NotificationManager.ACTION);
-              log('UPWORK', `High-match notification sent: ${job.uid} (score ${job.match_score})`);
+              notificationManager.notify(msg, NotificationManager.URGENT);
             }
           }
         }
 
-        // SUB-03/04-02: Auto-apply for qualifying jobs
+        // Auto-apply for qualifying jobs
         const autoApply = upworkDb.getAutoApplySettings();
         if (autoApply.enabled) {
           const hour = new Date().getHours();
-          if (hour < autoApply.startHour || hour >= autoApply.endHour) {
-            log('UPWORK', `Auto-apply skipped: outside time window (${autoApply.startHour}:00-${autoApply.endHour}:00, current: ${hour}:00)`);
-          } else {
+          if (hour >= autoApply.startHour && hour < autoApply.endHour) {
             const dailyCount = upworkDb.getAutoApplyCountToday();
-            if (dailyCount >= autoApply.maxDaily) {
-              log('UPWORK', `Auto-apply skipped: daily limit reached (${dailyCount}/${autoApply.maxDaily})`);
-            } else {
+            if (dailyCount < autoApply.maxDaily) {
               const connects = upworkDb.getConnectsBalance();
               let currentBalance = connects.balance;
-              if (currentBalance !== null && currentBalance < autoApply.connectsFloor) {
-                log('UPWORK', `Auto-apply skipped: connects below floor (${currentBalance}/${autoApply.connectsFloor})`);
-              } else {
+              if (currentBalance === null || currentBalance >= autoApply.connectsFloor) {
                 const readyJobs = upworkDb.getPendingJobs(10).filter(
                   j => j.status === 'proposal_ready' && j.cover_letter && (j.match_score || 0) >= autoApply.threshold
                 );
                 const remaining = autoApply.maxDaily - dailyCount;
                 const toApply = readyJobs.slice(0, remaining);
                 for (const job of toApply) {
-                  // Pre-check connects before each submission (prevents overspend in batch)
-                  const connectsCost = 16; // typical Upwork connects cost per application
-                  if (currentBalance !== null && currentBalance < autoApply.connectsFloor) {
-                    log('UPWORK', `Auto-apply stopped: connects would drop below floor (${currentBalance} remaining)`);
-                    break;
-                  }
-                  log('UPWORK', `Auto-applying to ${job.uid} (score ${job.match_score}, connects: ${currentBalance})`);
+                  const connectsCost = 16;
+                  if (currentBalance !== null && currentBalance < autoApply.connectsFloor) break;
                   upworkDb.updateJobStatus(job.uid, 'submitting', 'auto_applied');
-                  // Decrement balance estimate immediately to prevent overspend
                   if (currentBalance !== null) currentBalance -= connectsCost;
                   upworkSubmitter.submitJob(job, {
                     coverLetter: job.cover_letter,
@@ -720,16 +428,12 @@ if (CONFIG.upwork?.enabled) {
                     if (r.success) {
                       upworkDb.updateJobStatus(job.uid, 'applied', 'auto_applied');
                       const rateText = job.rate_max ? `$${job.rate_max}/hr` : (job.budget ? `$${job.budget} fixed` : '');
-                      const spent = r.connectsSpent || connectsCost;
                       notificationManager.notify(
-                        `UPWORK AUTO-APPLIED\n${job.title} ${rateText}\nScore: ${job.match_score}% | Connects: -${spent}`,
-                        NotificationManager.ACTION
+                        `UPWORK AUTO-APPLIED\n${job.title} ${rateText}\nScore: ${job.match_score}%`,
+                        NotificationManager.URGENT
                       );
                     }
                   }).catch(e => log('UPWORK', `Auto-apply error for ${job.uid}: ${e.message}`));
-                }
-                if (toApply.length > 0) {
-                  log('UPWORK', `Auto-applied to ${toApply.length} job(s)`);
                 }
               }
             }
@@ -741,11 +445,10 @@ if (CONFIG.upwork?.enabled) {
     },
     { timezone: CONFIG.quietHours?.timezone || 'America/New_York' }
   );
-  log('UPWORK', 'Scanner cron scheduled (*/30 * * * *)');
+  log('UPWORK', 'Scanner cron scheduled');
 }
 
-// Start polling loops
-const msgInterval = setInterval(pollMessages, CONFIG.pollIntervalMs);
+// ── Background Scan Loop ────────────────────────────────────────────────────
 let scanCount = 0;
 const scanInterval = setInterval(() => {
   scanCount++;
@@ -753,18 +456,18 @@ const scanInterval = setInterval(() => {
   checkSessionTimeouts();
   healthMonitor.checkAll();
 
-  // Revenue collection every N scans (default 5 = every 5 minutes)
+  // Revenue collection every N scans
   const collectionInterval = CONFIG.revenue?.collectionIntervalScans || 5;
   if (CONFIG.revenue?.enabled && scanCount % collectionInterval === 0) {
     revenueTracker.collect().catch(e => log('REVENUE', `Collection error: ${e.message}`));
   }
 
-  // Trust metrics update every scan
+  // Trust metrics update
   if (CONFIG.trust?.enabled) {
     try { trustTracker.update(); } catch (e) { log('TRUST', `Update error: ${e.message}`); }
   }
 
-  // Scan DB cleanup every 60 scans (~1 hour at 60s interval)
+  // Scan DB cleanup every hour
   if (scanCount % 60 === 0) {
     try {
       const cleaned = scanDb.cleanup();
@@ -772,157 +475,50 @@ const scanInterval = setInterval(() => {
     } catch (e) { log('SCANDB', `Cleanup error: ${e.message}`); }
   }
 
-  // Reminder check every scan (fire pending reminders)
+  // Reminder check
   if (CONFIG.reminders?.enabled !== false) {
     try { reminderManager.checkAndFire(); } catch (e) { log('REMINDER', `Check error: ${e.message}`); }
   }
+
+  // Inject health alerts into Claude session on critical failures
+  if (scanCount % 5 === 0 && claudeSession.isAlive()) {
+    const healthStats = healthMonitor.getStats();
+    if (healthStats.down > 0) {
+      const downNames = healthStats.services
+        .filter(s => s.status === 'down' && s.consecutiveFails >= 5)
+        .map(s => s.name);
+      if (downNames.length > 0) {
+        claudeSession.sendInput(
+          `[HEALTH] Services down: ${downNames.join(', ')}. Run \`node scripts/check-health.js\` for details.`
+        );
+      }
+    }
+  }
 }, CONFIG.scanIntervalMs);
 
-// Initial poll
-pollMessages();
-
-// Do an initial proactive scan after 5 seconds (let message polling init first)
+// Initial proactive scan after 5s
 setTimeout(proactiveScan, 5000);
 
-// ── AI Think Cycle ────────────────────────────────────────────────────────
-let thinkInterval = null;
-let nextThinkTimeoutMs = null;
+log('BOOT', 'ONE Claude v4.0 running. Persistent brain architecture active.');
 
-function startThinkCycle() {
-  if (thinkInterval) return;
-  const defaultIntervalMs = CONFIG.ai?.thinkIntervalMs || 300000;
-
-  function scheduleNextThink() {
-    const intervalMs = nextThinkTimeoutMs || defaultIntervalMs;
-    nextThinkTimeoutMs = null; // Reset override
-
-    thinkInterval = setTimeout(async () => {
-      if (!aiBrain.isEnabled()) {
-        scheduleNextThink();
-        return;
-      }
-      if (scheduler.isQuietTime()) {
-        scheduleNextThink();
-        return;
-      }
-
-      try {
-        log("AI", "Starting think cycle...");
-        const decision = await aiBrain.think();
-
-        if (decision && decision.recommendations?.length > 0) {
-          const evaluated =
-            decision.evaluated ||
-            decisionExecutor.evaluate(decision.recommendations);
-
-          // Get runtime autonomy level
-          const s = state.load();
-          const autonomyLevel = state.getAutonomyLevel(s, CONFIG);
-
-          if (autonomyLevel === "observe") {
-            // Observe mode: SMS only (Phase 1 behavior)
-            const sms = decisionExecutor.formatForSMS(
-              evaluated,
-              decision.summary
-            );
-            if (sms) {
-              notificationManager.notify(sms, 3); // tier 3 = summary
-            }
-          } else {
-            // Active mode: execute validated recommendations
-            for (const rec of evaluated) {
-              if (!rec.validated) continue;
-
-              try {
-                const result = await decisionExecutor.execute(rec);
-                log(
-                  "AI",
-                  `Executed: ${rec.action} ${rec.project} -> ${result.executed ? "success" : "rejected: " + (result.rejected || result.result?.message)}`
-                );
-              } catch (execErr) {
-                log(
-                  "AI",
-                  `Execution error for ${rec.project}: ${execErr.message}`
-                );
-              }
-            }
-          }
-
-          log(
-            "AI",
-            `Think cycle complete: ${decision.recommendations.length} recommendations`
-          );
-        } else {
-          log("AI", "Think cycle complete: no recommendations");
-        }
-
-        // Honor nextThinkIn if AI suggested one
-        if (decision?.nextThinkIn) {
-          const suggestedSeconds = parseInt(decision.nextThinkIn, 10);
-          if (!isNaN(suggestedSeconds) && suggestedSeconds > 0) {
-            aiBrain.setNextThinkOverride(suggestedSeconds);
-            const override = aiBrain.consumeNextThinkOverride();
-            if (override) {
-              nextThinkTimeoutMs = override;
-              log(
-                "AI",
-                `Next think in ${Math.round(override / 1000)}s (AI suggested)`
-              );
-            }
-          }
-        }
-      } catch (e) {
-        log("AI", `Think cycle error: ${e.message}`);
-      }
-
-      scheduleNextThink();
-    }, intervalMs);
-  }
-
-  scheduleNextThink();
-  log(
-    "AI",
-    `Think cycle scheduled (default ${defaultIntervalMs / 1000}s, AI may adjust)`
-  );
-}
-
-startThinkCycle();
-
-log("BOOT", "Orchestrator running. Text 'help' for commands.");
-
-// ── Graceful shutdown ───────────────────────────────────────────────────────
+// ── Graceful Shutdown ───────────────────────────────────────────────────────
 function shutdown(signal) {
-  log("SHUTDOWN", `Received ${signal}, stopping orchestrator...`);
-  log("SHUTDOWN", "Note: Managed tmux sessions will continue running independently.");
-  clearInterval(msgInterval);
+  log('SHUTDOWN', `Received ${signal}, stopping...`);
+  log('SHUTDOWN', 'Note: ONE Claude tmux session will continue running independently.');
   clearInterval(scanInterval);
-  if (thinkInterval) clearTimeout(thinkInterval);
+  smsBridge.stop();
+  claudeSession.stop();
   notificationManager.stopBatchTimer();
   scheduler.stop();
-  webServer.close();
   scanDb.close();
   revenueTracker.close();
   trustTracker.close();
   reminderManager.close();
   sessionLearner.close();
-  conversationStore.close();
   upworkScanner.close().catch(() => {});
   orchestratorDb.close();
   process.exit(0);
 }
 
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-
-// ── Terminal input ──────────────────────────────────────────────────────────
-const readline = require("readline");
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: "orch> " });
-rl.prompt();
-rl.on("line", async (line) => {
-  const input = line.trim();
-  if (!input) { rl.prompt(); return; }
-  const response = await commands.route(input);
-  console.log("\n" + response + "\n");
-  rl.prompt();
-});
-rl.on("close", () => {});
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));

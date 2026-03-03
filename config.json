@@ -48,31 +48,18 @@
     "investment/dvc-rental-business",
     "infra/ssh-terminal"
   ],
+  "claudeSession": {
+    "sessionName": "one-claude",
+    "responseTimeoutMs": 300000,
+    "maxRestarts": 3,
+    "healthCheckMs": 30000
+  },
   "ai": {
     "enabled": true,
-    "model": "sonnet",
-    "thinkIntervalMs": 1800000,
-    "maxPromptLength": 8000,
-    "autonomyLevel": "observe",
-    "protectedProjects": [],
-    "dedupTtlMs": 21600000,
-    "cooldowns": {
-      "sameProjectMs": 600000,
-      "sameActionMs": 300000
-    },
-    "resourceLimits": {
-      "minFreeMemoryMB": 256,
-      "maxConcurrentThinks": 1
-    },
     "maxSessionDurationMs": 5400000,
     "maxErrorRetries": 3,
-    "stalenessDays": 3,
-    "nl": {
-      "maxTurns": 25,
-      "timeout": 300000
-    },
     "notifications": {
-      "dailyBudget": 2,
+      "dailyBudget": 10,
       "batchIntervalMs": 14400000,
       "urgentBypassQuiet": false
     }
