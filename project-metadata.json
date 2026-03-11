@@ -1,0 +1,62 @@
+{
+  "revenue/3d-print-shop": {
+    "testStatus": "active"
+  },
+  "revenue/web-scraping-biz": {
+    "testStatus": "active"
+  },
+  "revenue/youtube-automation": {
+    "testStatus": "active"
+  },
+  "revenue/income-dashboard": {
+    "testStatus": "active"
+  },
+  "passive/xmr-miner": {
+    "testStatus": "active"
+  },
+  "passive/bandwidth-sharing": {
+    "testStatus": "active"
+  },
+  "passive/mlx-inference-api": {
+    "testStatus": "active"
+  },
+  "passive/dealhunter": {
+    "testStatus": "active"
+  },
+  "apps/democrat-dollar": {
+    "testStatus": "active"
+  },
+  "apps/streamfinder": {
+    "testStatus": "pending-testing"
+  },
+  "apps/FootballSquares": {
+    "testStatus": "complete"
+  },
+  "networking/network-diagram-generator": {
+    "testStatus": "needs-testing"
+  },
+  "networking/cisco-network-test": {
+    "testStatus": "needs-testing"
+  },
+  "networking/NetworkProbe": {
+    "testStatus": "needs-testing"
+  },
+  "networking/site-monitor": {
+    "testStatus": "needs-testing"
+  },
+  "gambling/nc-keno-analyzer": {
+    "testStatus": "complete"
+  },
+  "gambling/roulette-strategy": {
+    "testStatus": "complete"
+  },
+  "gambling/sports-arbitrage": {
+    "testStatus": "needs-testing"
+  },
+  "investment/land-speculation": {
+    "testStatus": "complete"
+  },
+  "investment/crypto-trader": {
+    "testStatus": "active"
+  }
+}

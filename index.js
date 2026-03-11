@@ -30,6 +30,7 @@ const StateManager = require('./lib/state');
 const ProjectScanner = require('./lib/scanner');
 const ProcessMonitor = require('./lib/process-monitor');
 const Messenger = require('./lib/messenger');
+const WebServer = require('./lib/web-server');
 const Scheduler = require('./lib/scheduler');
 const SessionManager = require('./lib/session-manager');
 const { SignalProtocol } = require('./lib/signal-protocol');
@@ -100,6 +101,20 @@ const upworkSubmitter = new UpworkSubmitter({
 
 // ── Email Digest ────────────────────────────────────────────────────────────
 const emailDigest = new EmailDigest({ scanner, healthMonitor, sessionManager, scanDb });
+
+// ── Web Dashboard ───────────────────────────────────────────────────────────
+const Commands = require('./lib/commands');
+const commands = new Commands({
+  scanner, processMonitor, scheduler, sessionManager, signalProtocol,
+  state, projectNames: CONFIG.projects, messenger, trustTracker,
+});
+const webServer = new WebServer({
+  scanner, healthMonitor, sessionManager, state, resourceMonitor,
+  revenueTracker, trustTracker, commands, config: CONFIG, scheduler, scanDb,
+  upworkDb, upworkProposals, upworkSubmitter,
+  aiBrain: { getStatus: () => ({ enabled: false }), getLastDecision: () => null },
+});
+webServer.start().catch(e => log('WEB', `Dashboard start error: ${e.message}`));
 
 // ── v4.0: Claude Session + SMS Bridge ───────────────────────────────────────
 const claudeSession = new ClaudeSession({
@@ -242,7 +257,8 @@ function checkSessionTimeouts() {
         sessionManager.stopSession(session.projectName);
 
         const msg = `Session ${session.projectName} timed out (${durationMin}min).`;
-        notificationManager.notify(msg, NotificationManager.URGENT);
+        // Log only — no SMS for session timeouts (Brad's preference)
+        log('TIMEOUT', msg);
 
         // Inject into Claude so it knows
         if (claudeSession.isAlive()) {
@@ -389,10 +405,17 @@ if (CONFIG.upwork?.enabled) {
             log('UPWORK', `Queued ${needsProposal.length} proposal generation(s) (score >= 50)`);
           }
 
-          // Notify for high-match jobs
+          // Notify for high-match jobs (budget must meet min_fixed_budget threshold)
           const autoSettings = upworkDb.getAutoApplySettings();
           if (autoSettings.notifyHighMatch) {
-            const highMatch = pending.filter(j => (j.match_score || 0) >= autoSettings.notifyThreshold);
+            const minBudget = autoSettings.minFixedBudget || 0;
+            const highMatch = pending.filter(j => {
+              if ((j.match_score || 0) < autoSettings.notifyThreshold) return false;
+              // Require minimum budget — skip low-budget jobs
+              const jobBudget = j.budget || j.rate_max || 0;
+              if (minBudget > 0 && jobBudget < minBudget) return false;
+              return true;
+            });
             for (const job of highMatch) {
               const rate = job.rate_max ? `$${job.rate_max}/hr` : (job.budget ? `$${job.budget} fixed` : 'rate TBD');
               const msg = `UPWORK HIGH MATCH (${job.match_score}%)\n${job.title}\n${rate}\nhttps://www.upwork.com/jobs/~${job.uid}`;
