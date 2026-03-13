@@ -6,3 +6,10 @@ orchestrator.db
 .keychain-password
 .auth-token
 .upwork-auth.json
+.DS_Store
+.playwright-cli/
+.playwright-mcp/
+.one-claude-launcher.sh
+orchestrator.db-shm
+orchestrator.db-wal
+upwork-scanner.db

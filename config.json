@@ -56,7 +56,8 @@
   },
   "ai": {
     "enabled": true,
-    "maxSessionDurationMs": 5400000,
+    "maxSessionDurationMs": 10800000,
+    "maxAutoResumes": 2,
     "maxErrorRetries": 3,
     "notifications": {
       "dailyBudget": 10,

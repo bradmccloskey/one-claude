@@ -242,8 +242,12 @@ function proactiveScan() {
 }
 
 // ── Session Timeout Enforcement ─────────────────────────────────────────────
+// Track resume counts per project to enforce maxAutoResumes
+const _sessionResumeCounts = {};
+
 function checkSessionTimeouts() {
-  const maxDurationMs = CONFIG.ai?.maxSessionDurationMs || 5400000;
+  const maxDurationMs = CONFIG.ai?.maxSessionDurationMs || 10800000;
+  const maxAutoResumes = CONFIG.ai?.maxAutoResumes ?? 2;
 
   try {
     const sessions = sessionManager.getActiveSessions();
@@ -254,17 +258,65 @@ function checkSessionTimeouts() {
       if (duration > maxDurationMs) {
         const durationMin = Math.round(duration / 60000);
         log('TIMEOUT', `Session ${session.projectName} exceeded ${Math.round(maxDurationMs / 60000)}min, stopping...`);
-        sessionManager.stopSession(session.projectName);
 
-        const msg = `Session ${session.projectName} timed out (${durationMin}min).`;
-        // Log only — no SMS for session timeouts (Brad's preference)
-        log('TIMEOUT', msg);
+        // Evaluate before stopping (needs tmux pane output)
+        evaluateSession(session.projectName).then((evaluation) => {
+          sessionManager.stopSession(session.projectName);
 
-        // Inject into Claude so it knows
-        if (claudeSession.isAlive()) {
-          claudeSession.sendInput(`[SYSTEM] ${msg}`);
-        }
-        evaluateSession(session.projectName);
+          const resumeCount = _sessionResumeCounts[session.projectName] || 0;
+
+          // Auto-resume if under the limit and evaluation recommends continuing
+          const evalFile = path.join(CONFIG.projectsDir, session.projectName, '.orchestrator', 'evaluation.json');
+          let shouldResume = false;
+          let evalRec = 'unknown';
+          try {
+            if (fs.existsSync(evalFile)) {
+              const evalData = JSON.parse(fs.readFileSync(evalFile, 'utf-8'));
+              evalRec = evalData.recommendation;
+              // Resume if evaluator says continue or retry, and we haven't hit the limit
+              shouldResume = (evalRec === 'continue' || evalRec === 'retry') && resumeCount < maxAutoResumes;
+            }
+          } catch {}
+
+          if (shouldResume) {
+            _sessionResumeCounts[session.projectName] = resumeCount + 1;
+            log('RESUME', `Auto-resuming ${session.projectName} (resume ${resumeCount + 1}/${maxAutoResumes}, eval=${evalRec})`);
+
+            // Brief delay to let tmux session fully clean up
+            setTimeout(() => {
+              const result = sessionManager.startSession(session.projectName);
+              if (result.success) {
+                log('RESUME', `Successfully restarted ${session.projectName}`);
+              } else {
+                log('RESUME', `Failed to restart ${session.projectName}: ${result.message}`);
+              }
+              // Notify ONE Claude
+              if (claudeSession.isAlive()) {
+                claudeSession.sendInput(`[SYSTEM] Session ${session.projectName} timed out (${durationMin}min) and was auto-resumed (${resumeCount + 1}/${maxAutoResumes}). Eval: ${evalRec}.`);
+              }
+            }, 5000);
+          } else {
+            // No resume — final timeout
+            delete _sessionResumeCounts[session.projectName];
+            const reason = resumeCount >= maxAutoResumes
+              ? `max resumes reached (${maxAutoResumes})`
+              : `eval=${evalRec}`;
+            const msg = `Session ${session.projectName} timed out (${durationMin}min). No auto-resume: ${reason}.`;
+            log('TIMEOUT', msg);
+
+            if (claudeSession.isAlive()) {
+              claudeSession.sendInput(`[SYSTEM] ${msg}`);
+            }
+          }
+        }).catch((e) => {
+          // If evaluation fails, just stop without resume
+          sessionManager.stopSession(session.projectName);
+          const msg = `Session ${session.projectName} timed out (${Math.round(duration / 60000)}min). Eval failed: ${e.message}`;
+          log('TIMEOUT', msg);
+          if (claudeSession.isAlive()) {
+            claudeSession.sendInput(`[SYSTEM] ${msg}`);
+          }
+        });
       }
     }
   } catch (e) {
@@ -319,52 +371,66 @@ setTimeout(() => {
   }, 15000);
 }, 5000);
 
+// ── SMS Digest Helpers ───────────────────────────────────────────────────────
+
+/**
+ * Build and send a morning project status SMS directly from live data.
+ * No Claude session injection — reliable and self-contained.
+ */
+function sendMorningSMS() {
+  try {
+    const projects = scanner.scanAllEnriched();
+    const healthResults = healthMonitor.getLastResults();
+
+    const active = projects.filter(p => p.hasState && !(p.status || '').toLowerCase().includes('complete')).length;
+    const blocked = projects.filter(p => p.needsAttention && p.blockers.length > 0);
+    const servicesUp = Object.values(healthResults).filter(s => s.status === 'up').length;
+    const servicesTotal = Object.values(healthResults).length;
+    const dirty = projects.filter(p => p.dirtyFiles > 0).map(p => p.name.split('/').pop());
+
+    const lines = [`Good morning! ONE Claude status:`];
+    lines.push(`${active}/${projects.length} projects active | ${servicesUp}/${servicesTotal} services up`);
+
+    if (blocked.length > 0) {
+      lines.push(`BLOCKED: ${blocked.map(p => p.name.split('/').pop()).join(', ')}`);
+    }
+    if (dirty.length > 0) {
+      lines.push(`Uncommitted: ${dirty.slice(0, 3).join(', ')}${dirty.length > 3 ? ` +${dirty.length - 3}` : ''}`);
+    }
+    if (blocked.length === 0 && dirty.length === 0) {
+      lines.push('All clear — no blockers or uncommitted changes.');
+    }
+
+    const msg = lines.join('\n');
+    messenger.send(msg.length > 500 ? msg.slice(0, 497) + '...' : msg);
+    log('DIGEST', 'Morning SMS sent');
+  } catch (e) {
+    log('DIGEST', `Morning SMS error: ${e.message}`);
+  }
+}
+
 // ── Scheduled Jobs ──────────────────────────────────────────────────────────
 
-// Morning digest (7 AM) — inject into Claude session
+// Morning digest (7 AM)
 scheduler.startMorningDigest(async () => {
   try {
     emailDigest.send().catch(e => log('EMAIL', `Email digest error: ${e.message}`));
-
-    if (claudeSession.isAlive()) {
-      claudeSession.sendInput(
-        '[SYSTEM] It is 7 AM. Generate and send a morning digest SMS to Brad. ' +
-        'Run `node scripts/scan-projects.js --brief` and `node scripts/check-health.js` ' +
-        'to get current status, then compose a concise morning summary.'
-      );
-    }
+    sendMorningSMS();
   } catch (e) {
     log('DIGEST', `Morning digest error: ${e.message}`);
   }
 });
 
-// Evening digest (9:45 PM)
+// Evening digest (9:45 PM) — kept as session injection for now (conversational summary)
 scheduler.startEveningDigest(async () => {
-  try {
-    if (claudeSession.isAlive()) {
-      claudeSession.sendInput(
-        '[SYSTEM] It is 9:45 PM. Generate and send an evening wind-down SMS to Brad. ' +
-        'Summarize today\'s accomplishments (check git logs across projects) ' +
-        'and suggest what to focus on tomorrow. Keep under 500 chars.'
-      );
-    }
-  } catch (e) {
-    log('DIGEST', `Evening digest error: ${e.message}`);
-  }
+  // No-op: evening digest via Claude session removed (unreliable injection)
+  // Future: add direct evening SMS similar to sendMorningSMS()
 });
 
 // Weekly revenue summary (Sunday 7 AM)
 scheduler.startWeeklySummary(async () => {
-  try {
-    if (claudeSession.isAlive()) {
-      claudeSession.sendInput(
-        '[SYSTEM] Weekly revenue summary due. Check XMR mining balance, ' +
-        'MLX API requests, and any other revenue data. Send a concise weekly summary SMS.'
-      );
-    }
-  } catch (e) {
-    log('REVENUE', `Weekly summary error: ${e.message}`);
-  }
+  // No-op: weekly summary via Claude session removed (unreliable injection)
+  // Future: pull revenue data directly from RevenueTracker and send SMS
 });
 
 // Daily trust promotion check (10 AM)
